@@ -9,10 +9,13 @@ import {icon} from './core/icons.js';
 import {PIN_KEY,createPinDialog} from './core/pin.js';
 import {openStorage} from './core/storage.js';
 import {SYNC_STATUS_KEY} from './core/sync.js';
+import {CAMERA_KEY,createCameraMemory} from './core/camera.js';
 import {setupCloud,CLOUD_KEYS} from './core/cloud.js';
 import {DRIVE_STATUS_KEY,DRIVE_SETTINGS_KEY} from './core/drive.js';
 const $=s=>document.querySelector(s),all=s=>[...document.querySelectorAll(s)];
-const storage=await openStorage([KEY,PIN_KEY,SYNC_STATUS_KEY,...CLOUD_KEYS]);
+const storage=await openStorage([KEY,PIN_KEY,SYNC_STATUS_KEY,CAMERA_KEY,...CLOUD_KEYS]);
+const cameras=createCameraMemory(storage);
+const rememberCamera=()=>{if(!list&&!board.hidden)cameras.set(currentParent,camera,board.clientWidth,board.clientHeight);};
 let cloud=null;
 const store=new BoardStore(registry,seed,storage);
 storage.onWriteError=message=>{store.error='Не сохранено: '+message;saved();};
@@ -23,7 +26,7 @@ world.addEventListener('animationend',event=>{
   if(classes[event.animationName])event.target.classList.remove(classes[event.animationName]);
 });
 let selected=null,hand=false,space=false,drag=null,pendingMouseDrag=null,cardCleanup=[],screenCleanup=null;
-let list=matchMedia('(max-width:700px)').matches,camera={x:0,y:0,z:1},cameras=new Map(),currentParent=null,route={kind:'board',id:null};
+let list=matchMedia('(max-width:700px)').matches,camera={x:0,y:0,z:1},currentParent=null,route={kind:'board',id:null};
 let confirmAction,hasNavigated=false,inspectorVisible=false,statusTimeout;
 let editingId=null,seenCards=new Set(),suppressClickUntil=0;
 const unlocked=new Set(),externalProtected=new Set();
@@ -201,12 +204,12 @@ function renderScreen(){
 }
 function navigate(){
   pendingMouseDrag=null;hold.cancel();widgetMenu.close();inspectorVisible=false;editingId=null;seenCards.clear();
-  if(hasNavigated&&!board.hidden)cameras.set(currentParent,{...camera});hasNavigated=true;
+  if(hasNavigated)rememberCamera();hasNavigated=true;
   disposeScreen();disposeCards();$('#detail-content').replaceChildren();world.replaceChildren();route=parseRoute();selected=null;
   const node=route.id?store.get(route.id):null;if(route.id&&!node||route.kind==='board'&&node&&node.type!=='folder'){status('Эта папка или виджет больше не существует.');history.replaceState(null,'','#/board');route={kind:'board',id:null};}
   const detail=route.kind==='widget'||!!lockFor(route.id);document.body.classList.toggle('detail-mode',detail);$('#breadcrumbs').hidden=detail||!route.id;$('#board').hidden=detail;$('#detail').hidden=!detail;$('#board-toolbar').hidden=detail;$('#canvas-controls').hidden=detail||list;$('.workspace-dock').hidden=detail;$('#board-help').hidden=detail;
   heading();sidebar();inspect();updatePinControls();
-  if(detail)renderScreen();else{currentParent=route.id;camera=cameras.get(currentParent)||{x:0,y:0,z:1};renderBoard();if(!cameras.has(currentParent))requestAnimationFrame(fit);}saved();
+  if(detail)renderScreen();else{currentParent=route.id;restoreCamera();}saved();
 }
 function refresh(){
   sidebar();heading();updatePinControls();$('#undo').disabled=!store.history.length;
@@ -215,6 +218,10 @@ function refresh(){
 }
 store.subscribe(refresh);
 window.addEventListener('hashchange',navigate);
+function restoreCamera(){
+  const saved=list?null:cameras.get(currentParent,board.clientWidth,board.clientHeight);
+  camera=saved||{x:0,y:0,z:1};renderBoard();if(!saved)requestAnimationFrame(fit);
+}
 function fit(){
   if(list||board.hidden)return;
   const b=boundsOf(store.children(currentParent)),w=board.clientWidth,h=board.clientHeight;
@@ -223,9 +230,9 @@ function fit(){
   camera.z=clamp(Math.min((w-90)/(b.right-b.left),(h-top-bottom)/(b.bottom-b.top),1),.2,2);
   camera.x=w/2-(b.left+b.right)/2*camera.z;
   camera.y=(top+h-bottom)/2-(b.top+b.bottom)/2*camera.z;
-  paintCamera();cameras.set(currentParent,{...camera});
+  paintCamera();rememberCamera();
 }
-function zoom(factor,x=board.clientWidth/2,y=board.clientHeight/2){const z=clamp(camera.z*factor,.2,2),wx=(x-camera.x)/camera.z,wy=(y-camera.y)/camera.z;camera={z,x:x-wx*z,y:y-wy*z};paintCamera();}
+function zoom(factor,x=board.clientWidth/2,y=board.clientHeight/2){const z=clamp(camera.z*factor,.2,2),wx=(x-camera.x)/camera.z,wy=(y-camera.y)/camera.z;camera={z,x:x-wx*z,y:y-wy*z};paintCamera();rememberCamera();}
 function point(event){const r=board.getBoundingClientRect();return {x:(event.clientX-r.left-camera.x)/camera.z,y:(event.clientY-r.top-camera.y)/camera.z};}
 function addType(type){$('#board-options').close();const onScreen=route.kind==='widget',parent=onScreen?(store.get(route.id)?.parentId??null):currentParent;const pos=list||onScreen?undefined:{x:(board.clientWidth/2-camera.x)/camera.z,y:(board.clientHeight/2-camera.y)/camera.z};const id=attempt(()=>store.add(type,parent,pos));if(!id)return;selected=id;$('#catalog').close();if(onScreen)go(parent);else renderBoard();status('Виджет добавлен. Действия — через ⋯ на карточке.');}
 $('#catalog-grid').replaceChildren(...registry.list().map(def=>
@@ -243,7 +250,7 @@ let lastBoardSize;
 new ResizeObserver(()=>{if(board.hidden||list){lastBoardSize=null;return;}const next={w:board.clientWidth,h:board.clientHeight};if(lastBoardSize){camera.x+=(next.w-lastBoardSize.w)/2;camera.y+=(next.h-lastBoardSize.h)/2;paintCamera();}lastBoardSize=next;}).observe(board);
 all('[data-close]').forEach(button=>button.onclick=()=>button.closest('dialog').close());
 all('dialog').forEach(dialog=>dialog.addEventListener('click',event=>{if(event.target===dialog){const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dialog.close();}}));
-$('#view-canvas').onclick=()=>{list=false;$('#board-options').close();renderBoard();fit();};$('#view-list').onclick=()=>{list=true;$('#board-options').close();renderBoard();};
+$('#view-canvas').onclick=()=>{list=false;$('#board-options').close();restoreCamera();};$('#view-list').onclick=()=>{list=true;$('#board-options').close();renderBoard();};
 $('#zoom-in').onclick=()=>zoom(1.2);$('#zoom-out').onclick=()=>zoom(1/1.2);$('#fit').onclick=()=>{fit();$('#board-options').close();};$('#pan-mode').onclick=()=>{hand=!hand;$('#pan-mode').setAttribute('aria-pressed',String(hand));$('#board-options').close();paintCamera();};
 $('#undo').onclick=()=>{attempt(()=>store.undo());if(selected&&!store.get(selected)){selected=null;inspect();}status('Последнее изменение отменено.');};
 $('#close-inspector').onclick=finishEditing;
@@ -334,7 +341,7 @@ function endDrag(event,cancel=false){
   if(!drag||drag.pointer!==event.pointerId)return;const d=drag;drag=null;
   hold.cancel();board.classList.remove('panning','dragging');d.frame?.classList.remove('dragging-card');
   if(board.hasPointerCapture(event.pointerId))board.releasePointerCapture(event.pointerId);
-  if(d.kind==='pan'){if(cancel)camera=d.camera;cameras.set(currentParent,{...camera});paintCamera();return;}
+  if(d.kind==='pan'){if(cancel)camera=d.camera;paintCamera();rememberCamera();return;}
   const changed=Object.keys(d.original).some(key=>d.original[key]!==d.preview[key]);
   suppressClickUntil=performance.now()+600;
   if(!cancel&&changed){
@@ -405,6 +412,8 @@ storage.onExternalChange(event=>{
   adoptExternal();
 });
 window.addEventListener('beforeunload',()=>{if(screenCleanup)screenCleanup();});
+window.addEventListener('pagehide',()=>cameras.flush());
+document.addEventListener('visibilitychange',()=>{if(document.hidden)cameras.flush();});
 cloud=setupCloud({storage,store,onLocalChange:key=>{if(key===KEY)adoptExternal();else if(key===PIN_KEY)lockCards();else if(key===DRIVE_STATUS_KEY||key===DRIVE_SETTINGS_KEY)saved();}});
 $('#drive-connect').onclick=$('#drive-signin').onclick=()=>cloud.connect().then(()=>{saved();status('Google Диск подключён. Синхронизирую…');}).catch(error=>status(error.message));
 $('#drive-disconnect').onclick=()=>cloud.disconnect().then(()=>{saved();status('Google Диск отключён. Доска остаётся на этом устройстве.');});
