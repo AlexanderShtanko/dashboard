@@ -29,7 +29,7 @@ let editingId=null,seenCards=new Set(),suppressClickUntil=0;
 const unlocked=new Set(),externalProtected=new Set();
 const pinDialog=createPinDialog(storage,$('#pin-dialog'),lockCards);
 const lockedTitle='Закрытая карточка';
-const dragExclusions='input,textarea,select,label,[contenteditable],.widget-options,.card-edit-done,.unlock-card';
+const dragExclusions='input,textarea,select,label,[contenteditable],[data-no-card-drag],.widget-options,.card-edit-done,.unlock-card';
 function isProtected(node){return node.pinProtected||externalProtected.has(node.id);}
 function lockFor(id){return store.ancestors(id).find(node=>isProtected(node)&&!unlocked.has(node.id));}
 function requirePin(title,complete,save=false){
