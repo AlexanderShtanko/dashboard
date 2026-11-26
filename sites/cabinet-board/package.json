@@ -1,0 +1,1 @@
+{"name":"cabinet-board","version":"0.1.0","private":true,"type":"module","scripts":{"dev":"node dev.mjs","test":"node --test tests/*.test.mjs","preview:build":"node create-preview.mjs","extension:build":"node build-extension.mjs"}}

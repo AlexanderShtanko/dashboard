@@ -1,0 +1,6 @@
+import {icon} from './icons.js';
+export function el(tag,attrs={},...children){const node=document.createElement(tag);for(const [key,value] of Object.entries(attrs)){if(key==='class')node.className=value;else if(key==='text')node.textContent=value;else if(key.startsWith('on'))node.addEventListener(key.slice(2).toLowerCase(),value);else if(key==='checked')node.checked=!!value;else if(key==='value')node.value=value;else if(value!==false&&value!==null&&value!==undefined)node.setAttribute(key,value===true?'':value);}for(const child of children.flat())if(child!==null&&child!==undefined)node.append(typeof child==='string'?document.createTextNode(child):child);return node;}
+export function action(label,onClick,className='button'){return el('button',{type:'button',class:className,onClick},label);}
+export function inputField(label,options,onChange){const input=el(options.multiline?'textarea':'input',{...options,multiline:undefined,onChange:event=>onChange(event.target.value)});return el('label',{class:'field'},el('span',{},label),input);}
+export function safeUrl(value){try{const url=new URL(value);return ['http:','https:'].includes(url.protocol)?url.href:null;}catch{return null;}}
+export function symbol(name){return el('span',{class:'symbol','aria-hidden':'true'},icon(name));}

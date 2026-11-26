@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#e8e5df"><meta name="description" content="Личная доска с виджетами, папками и пространством для главного."><title>Кабинет — личная доска</title><link rel="icon" href="./icons/icon-32.png" sizes="32x32"><link rel="manifest" href="./manifest.webmanifest"><link rel="apple-touch-icon" href="./icons/icon-180.png"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Кабинет"><link rel="stylesheet" href="./style.css"><script type="module" src="./app.js"></script></head>
+<body><div class="app-shell">
+<main class="main"><nav id="breadcrumbs" class="floating-breadcrumbs" aria-label="Навигация по папкам" hidden></nav>
+<section id="board" class="board" aria-label="Доска с виджетами"><div id="world" class="world"></div><div id="board-empty" class="board-empty" hidden><div class="empty-glass-art" aria-hidden="true"><span class="empty-pane pane-back"></span><span class="empty-pane pane-front"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></div><h2>Место для главного</h2><p>Начни с одной заметки, задачи или папки.<br>Остальное добавишь, когда понадобится.</p><button class="button primary" id="empty-add">Добавить первую карточку</button><p class="empty-tip">Удерживай карточку, чтобы настроить её.</p></div></section>
+<section id="inspector" class="inspector" aria-label="Параметры виджета" hidden><label>Название<input id="item-title" maxlength="160"></label><label>Ширина<input id="item-width" type="number" min="220" max="1600"></label><label>Высота<input id="item-height" type="number" min="170" max="1600"></label><label>Поворот<input id="item-angle" type="number" step="1"></label><div class="inspector-actions"><button id="move" class="button">В папку…</button><button id="duplicate" class="icon-button" aria-label="Дублировать виджет" title="Дублировать">⧉</button><button id="front" class="icon-button" aria-label="На передний план" title="На передний план">↑</button><button id="delete" class="icon-button danger" aria-label="Удалить виджет" title="Удалить">×</button><button id="close-inspector" class="text-button">Готово</button></div></section>
+<section id="detail" class="detail" aria-labelledby="page-title" hidden>
+  <header class="detail-header">
+    <button class="text-button" id="back">← На доску</button>
+    <button class="text-button" id="detail-lock" aria-label="Заблокировать карточки" title="Заблокировать карточки" hidden></button>
+    <h1 id="page-title" tabindex="-1"></h1>
+  </header>
+  <div id="detail-content" class="detail-content"></div>
+</section>
+<div id="status" class="toast" role="status" aria-live="polite"></div>
+</main></div>
+<nav class="workspace-dock" aria-label="Инструменты доски">
+<button class="icon-button" id="board-menu" aria-label="Меню доски" title="Меню доски" aria-haspopup="dialog">☰</button>
+<button class="icon-button dock-add" id="add-widget" aria-label="Добавить виджет" title="Добавить виджет">＋</button>
+<button class="icon-button" id="fullscreen" aria-label="На весь экран" title="На весь экран" aria-pressed="false">⤢</button>
+</nav>
+<dialog id="board-options" class="modal small"><div class="modal-heading"><h2>Моя доска</h2><button class="icon-button" data-close aria-label="Закрыть меню доски">×</button></div>
+<nav id="navigation" aria-label="Мои доски"></nav>
+<div class="board-toolbar" id="board-toolbar"><div class="view-switch" aria-label="Вид доски"><button id="view-canvas" aria-pressed="true">Доска</button><button id="view-list" aria-pressed="false">Карточки</button></div><button class="icon-button" id="undo" aria-label="Отменить последнее изменение" title="Отменить" disabled>↶</button><span id="count" class="muted"></span></div>
+<div class="canvas-controls" id="canvas-controls"><button class="icon-button" id="pan-mode" aria-pressed="false" aria-label="Перемещать поле" title="Перемещать поле">✥</button><span></span><button class="icon-button" id="zoom-out" aria-label="Уменьшить масштаб">−</button><output id="zoom-value">100%</output><button class="icon-button" id="zoom-in" aria-label="Увеличить масштаб">+</button><button class="icon-button" id="fit" aria-label="Показать все виджеты" title="Показать всё">⛶</button></div>
+<p id="board-help" class="modal-footnote">Мышью тяни карточку сразу. На сенсорном экране сначала удержи её. Размер и поворот доступны через меню карточки. Ctrl + колесо меняет масштаб.</p>
+<div class="pin-actions"><button class="text-button" id="pin-settings">Настроить PIN</button><button class="text-button" id="pin-lock-all" hidden>Заблокировать карточки</button></div>
+<div class="cloud-actions" id="cloud-actions" hidden><button class="text-button" id="drive-connect">Подключить Google Диск</button><button class="text-button" id="drive-signin" hidden>Войти в Google</button><button class="text-button" id="drive-disconnect" hidden>Отключить Google Диск</button></div>
+<div class="file-actions"><button class="text-button" id="export">Экспорт доски</button><button class="text-button" id="import">Импорт доски</button><input id="import-file" type="file" accept="application/json,.json" hidden></div><span class="save-status" id="save-status" role="status">Сохранено в браузере</span></dialog>
+<dialog id="catalog" class="modal" aria-labelledby="catalog-title"><div class="modal-heading"><h2 id="catalog-title">Добавить на доску</h2><button class="icon-button" data-close aria-label="Закрыть каталог">×</button></div><div id="catalog-grid" class="catalog-grid"></div></dialog>
+<dialog id="move-dialog" class="modal small"><div class="modal-heading"><h2>Переместить в папку</h2><button class="icon-button" data-close aria-label="Закрыть">×</button></div><div id="move-destinations"></div></dialog>
+<dialog id="confirm-dialog" class="modal small"><h2 id="confirm-title"></h2><p id="confirm-text"></p><div class="modal-actions"><button class="button" data-close>Отмена</button><button class="button primary" id="confirm-action">Продолжить</button></div></dialog>
+<dialog id="pin-dialog" class="modal small" aria-labelledby="pin-title">
+  <div class="modal-heading"><h2 id="pin-title">PIN-код</h2><button class="icon-button" type="button" data-close aria-label="Закрыть окно PIN">×</button></div>
+  <form class="pin-form">
+    <p id="pin-hint"></p>
+    <label class="field"><span>PIN-код</span><input id="pin-current" type="password" inputmode="numeric" pattern="[0-9]{4,12}" maxlength="12" autocomplete="current-password"></label>
+    <label class="field"><span>Новый PIN</span><input id="pin-new" type="password" inputmode="numeric" pattern="[0-9]{4,12}" maxlength="12" autocomplete="new-password"></label>
+    <label class="field"><span>Повтори новый PIN</span><input id="pin-repeat" type="password" inputmode="numeric" pattern="[0-9]{4,12}" maxlength="12" autocomplete="new-password"></label>
+    <p id="pin-error" role="alert"></p>
+    <div class="modal-actions"><button class="button primary" type="submit">Подтвердить</button></div>
+  </form>
+</dialog>
+<noscript>Для работы доски нужен JavaScript.</noscript>
+</body></html>

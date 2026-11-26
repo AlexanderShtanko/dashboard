@@ -1,0 +1,4 @@
+import {el,action,symbol} from '../core/dom.js';
+export const folder={type:'folder',version:1,title:'Новая папка',catalogTitle:'Папка с виджетами',description:'Отдельная доска внутри доски. Для проекта, темы или привычки.',icon:'folder',tone:'sage',size:{w:300,h:245},createData:()=>({description:'Всё для одного контекста.'}),validate:d=>typeof d.description==='string'&&d.description.length<=1000,
+renderCard({node,children,registry,open}){const nested=children(node.id);return el('button',{class:'folder-preview',onClick:open,'aria-label':'Открыть папку '+node.title},el('div',{class:'folder-tiles'},nested.slice(0,4).map(child=>el('span',{class:'folder-tile'},symbol(child.locked?'lock':registry.get(child.type)?.icon),el('small',{},child.title))),!nested.length?el('span',{class:'folder-empty'},'+'):null),el('span',{class:'folder-caption'},el('span',{},`${nested.length} внутри`),el('span',{},'Открыть ↗')));}
+};
