@@ -913,3 +913,202 @@ button.folder-empty:hover{background:#ffffff40;}
 .folder-caption{align-items:center;}
 .folder-caption .text-button{padding:4px 0;}
 @media(prefers-reduced-motion:reduce){.focus-bar>span,.focus-ring-value,button.folder-tile,.tasks-chevron svg{transition:none;}}
+
+/* ══ Modern skeuomorphism ═══════════════════════════════════════════════════
+   One light source from above. Raised things get a bright top edge and a soft
+   layered shadow; recessed things (fields, checks, tracks) get an inner shadow.
+   Materials: cloth desk, matte card stock, sticky paper, kraft folder,
+   porcelain sheets for menus and dialogs, enamel for the primary action. */
+:root{
+  --desk:#e2dcd0;--card-top:#fffdf9;--card-bottom:#f6f2ea;
+  --text:#2f332d;--muted:#656b60;--line:#5a4a3224;--green:#3f6a4e;--green-soft:#e1eadf;
+  --hi:inset 0 1px 0 #ffffffe6;
+  --rim:0 0 0 1px #4a3c2814;
+  --raise-sm:0 1px 1px #3c301e14,0 2px 4px #3c301e12;
+  --raise:0 1px 1px #3c301e12,0 4px 8px -2px #3c301e1c,0 16px 30px -10px #3c301e33;
+  --raise-lg:0 2px 4px #3c301e14,0 12px 24px -6px #3c301e24,0 32px 64px -16px #3c301e47;
+  --well:inset 0 1px 2px #3c301e2e,inset 0 0 0 1px #3c301e0f,0 1px 0 #ffffffcc;
+  --enamel:linear-gradient(180deg,#679a74 0%,#4a7a58 48%,#3d6a4b 100%);
+  --enamel-shadow:inset 0 1px 0 #ffffff5c,inset 0 -1px 0 #00000026,0 1px 0 #2e4c37,0 2px 6px #2e4c3740;
+  --key:linear-gradient(180deg,#fffefb,#efeadf);
+  --key-shadow:inset 0 1px 0 #fff,0 0 0 1px #4a3c281f,0 1px 0 #4a3c2826,0 2px 4px #3c301e14;
+  --key-pressed:inset 0 1px 3px #3c301e33,0 0 0 1px #4a3c2824;
+  --letterpress:0 1px 0 #ffffffb3;
+  --shadow:var(--raise);
+}
+html{background:var(--desk);}
+body{
+  background-color:var(--desk);
+  background-image:
+    radial-gradient(120% 70% at 50% -12%,#fffaf0a6,transparent 62%),
+    radial-gradient(140% 90% at 50% 125%,#5a462a1f,transparent 60%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .28 0 0 0 0 .18 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.3'/%3E%3C/svg%3E");
+  background-size:auto,auto,160px 160px;background-attachment:fixed;
+}
+
+/* Cards: matte card stock with a lit top edge and a thin dark underside. */
+.widget{
+  background:linear-gradient(180deg,var(--card-top),var(--card-bottom));
+  border:0;border-radius:20px;
+  box-shadow:var(--hi),inset 0 -1px 0 #4a3c2812,var(--rim),var(--raise);
+  transition:scale .2s var(--ease),box-shadow .25s var(--ease);
+}
+.widget.tone-white{background:linear-gradient(180deg,var(--card-top),var(--card-bottom));}
+.widget.tone-sage{background:linear-gradient(180deg,#f2f5ee,#e4ebe0);}
+.widget.tone-sand{background:linear-gradient(180deg,#f8f1e7,#ede2d3);}
+@media(any-pointer:fine){
+  .board:not(.list-view):not(.dragging) .widget:hover{box-shadow:var(--hi),inset 0 -1px 0 #4a3c2812,var(--rim),0 2px 3px #3c301e14,0 8px 14px -4px #3c301e24,0 24px 42px -12px #3c301e3d;}
+}
+.widget.selected,.widget.editing{box-shadow:var(--hi),0 0 0 2px #3f6a4e8c,0 0 0 6px #3f6a4e1f,var(--raise);}
+.widget.dragging-card{box-shadow:var(--hi),var(--rim),0 6px 10px #3c301e1f,0 30px 56px -12px #3c301e59;}
+
+/* Sticky note: warm paper, a darker glue band at the top, lifted corner. */
+.widget.tone-paper,.widget[data-type=note]{
+  background:linear-gradient(180deg,#f3e6b4 0,#fdf3c9 26px,#fff7d6 60%,#fbefc4 100%);
+  border-radius:6px 6px 18px 6px;
+}
+.widget:where([data-type=note]){box-shadow:var(--hi),var(--rim),0 1px 1px #3c301e12,0 4px 8px -2px #3c301e1c,0 16px 30px -10px #3c301e33,10px 16px 14px -12px #3c301e4d;}
+.note-preview,.note-inline{font-family:Charter,"Iowan Old Style","Palatino Linotype",Georgia,serif;color:#45402f;}
+
+/* Kraft folder with a tab. */
+.widget[data-type=folder]{background:linear-gradient(180deg,#efe3cb,#e3d3b5);border-radius:6px 18px 18px 18px;}
+.widget[data-type=folder]::after{top:-11px;height:12px;width:38%;background:linear-gradient(180deg,#eadbbe,#e3d2b2);border-radius:9px 12px 0 0;box-shadow:inset 0 1px 0 #fff8e6,0 -1px 2px #3c301e14;}
+.folder-tile,button.folder-tile{background:linear-gradient(180deg,#fffdf7,#f7f1e4);border:0;border-radius:8px;box-shadow:inset 0 1px 0 #fff,0 0 0 1px #4a3c2814,0 2px 4px #3c301e1f;}
+button.folder-tile:hover{box-shadow:inset 0 1px 0 #fff,0 0 0 1px #4a3c2814,0 5px 10px #3c301e29;}
+.folder-empty,button.folder-empty{border:0;background:#6b552f0d;box-shadow:inset 0 1px 3px #3c301e24,0 1px 0 #ffffff80;color:#7d6c4e;}
+
+/* Card header: embossed title and a small raised badge for the icon. */
+.widget-drag{color:var(--text);font-weight:600;text-shadow:var(--letterpress);}
+.widget-drag .symbol,.catalog-item>.symbol{
+  background:var(--key);border-radius:9px;color:#52664f;
+  box-shadow:inset 0 1px 0 #fff,0 0 0 1px #4a3c281a,0 1px 2px #3c301e1f;
+}
+.tone-paper .widget-drag .symbol,.widget[data-type=note] .widget-drag .symbol{color:#7a6230;background:linear-gradient(180deg,#fffaea,#f6e9bf);}
+.widget[data-type=folder] .widget-drag .symbol{color:#7a6240;background:linear-gradient(180deg,#f8efdc,#ead9b9);}
+.widget-options{color:#7a7f74;}
+.widget-options:hover,.widget-options[aria-expanded=true]{background:var(--key);color:var(--text);box-shadow:var(--key-shadow);}
+.card-edit-done{background:var(--enamel);box-shadow:var(--enamel-shadow);}
+
+/* Keys: raised at rest, pressed into the surface when active. */
+.button{background:var(--key);border:0;border-radius:12px;color:var(--text);box-shadow:var(--key-shadow);text-shadow:var(--letterpress);}
+.button:hover{background:linear-gradient(180deg,#fff,#f4f0e7);}
+.button:active:not(:disabled){background:linear-gradient(180deg,#ebe5d9,#f3efe6);box-shadow:var(--key-pressed);translate:0 1px;scale:1;}
+.button.quiet{background:none;box-shadow:none;text-shadow:none;}
+.workspace-dock .dock-add,.button.primary,.focus-card .focus-main{
+  color:#fdfcf7;background:var(--enamel);border:0;box-shadow:var(--enamel-shadow);text-shadow:0 -1px 0 #0000002e;
+}
+.workspace-dock .dock-add:hover,.button.primary:hover,.focus-card .focus-main:hover{background:linear-gradient(180deg,#72a67f,#52845f 48%,#43714f);filter:none;}
+.workspace-dock .dock-add:active:not(:disabled),.button.primary:active:not(:disabled),.focus-card .focus-main:active{background:linear-gradient(180deg,#3d6a4b,#4a7a58);box-shadow:inset 0 2px 4px #0000003d,0 1px 0 #ffffff80;translate:0 1px;scale:1;}
+.icon-button:hover,.icon-button[aria-pressed=true]{background:#4a3c2810;}
+.modal-heading>.icon-button{background:var(--key);box-shadow:var(--key-shadow);border-radius:50%;width:36px;height:36px;}
+.modal-heading>.icon-button:active{box-shadow:var(--key-pressed);}
+
+/* Dock: a raised plate holding three keys. */
+.workspace-dock{
+  background:linear-gradient(180deg,#f7f3ec,#e7e0d3);border:0;border-radius:24px;padding:7px;gap:7px;
+  box-shadow:inset 0 1px 0 #fff,inset 0 -1px 0 #4a3c2814,var(--rim),var(--raise);
+}
+.workspace-dock .icon-button{background:var(--key);border-radius:16px;color:#4f5a4a;box-shadow:var(--key-shadow);}
+.workspace-dock .icon-button:hover{background:linear-gradient(180deg,#fff,#f4f0e7);box-shadow:var(--key-shadow);}
+.workspace-dock .icon-button:active:not(:disabled),.workspace-dock .icon-button[aria-pressed=true]{background:linear-gradient(180deg,#e6dfd2,#efe9de);box-shadow:var(--key-pressed);color:var(--green);}
+.workspace-dock .icon-button.dock-add{color:#fdfcf7;background:var(--enamel);box-shadow:var(--enamel-shadow);}
+.workspace-dock .icon-button.dock-add:hover{background:linear-gradient(180deg,#72a67f,#52845f 48%,#43714f);}
+.workspace-dock .icon-button.dock-add:active:not(:disabled){background:linear-gradient(180deg,#3d6a4b,#4a7a58);box-shadow:inset 0 2px 4px #0000003d;color:#fdfcf7;}
+.floating-breadcrumbs{background:linear-gradient(180deg,#fbf8f2,#efe9de);border:0;border-radius:14px;box-shadow:var(--hi),var(--rim),var(--raise-sm);text-shadow:var(--letterpress);}
+
+/* Fields: wells pressed into the surface. */
+input,textarea,select{background:linear-gradient(180deg,#f3efe7,#fbf9f5 40%);border:0;border-radius:10px;box-shadow:var(--well);}
+input:focus,textarea:focus,select:focus{background:#fffdf9;box-shadow:var(--well),0 0 0 3px #3f6a4e2e;outline:none;}
+.note-inline,.note-inline:focus,.note-editor,.note-editor:focus,.task-edit>input:not([type=checkbox]),.focus-custom{box-shadow:none;background:transparent;}
+.detail-content .note-editor{background:transparent;}
+.focus-custom:focus{background:#fffdf9;box-shadow:var(--well);}
+
+/* Checks: an empty well that fills with an enamel drop. */
+.task-check{width:20px;height:20px;margin:2px 2px 0;border:0;background:linear-gradient(180deg,#ebe6db,#f9f7f2);box-shadow:inset 0 1px 2px #3c301e40,inset 0 0 0 1px #3c301e14,0 1px 0 #fff;}
+.task-check:hover{border:0;box-shadow:inset 0 1px 2px #3c301e40,inset 0 0 0 1px #3f6a4e66,0 1px 0 #fff;}
+.task-check:checked{background:var(--enamel);box-shadow:inset 0 1px 0 #ffffff59,0 1px 2px #2e4c3759,0 0 0 1px #2e4c3740;}
+.habit-cell{border:0;background:linear-gradient(180deg,#ebe6db,#f9f7f2);box-shadow:inset 0 1px 2px #3c301e38,inset 0 0 0 1px #3c301e12,0 1px 0 #fff;}
+.habit-cell:hover{border:0;box-shadow:inset 0 1px 2px #3c301e38,inset 0 0 0 1px #3f6a4e73,0 1px 0 #fff;}
+.habit-cell.is-today{box-shadow:inset 0 1px 2px #3c301e38,inset 0 0 0 1.5px #3f6a4e8c,0 1px 0 #fff;}
+.habit-cell.is-done{background:var(--enamel);box-shadow:inset 0 1px 0 #ffffff59,0 1px 2px #2e4c3759,0 0 0 1px #2e4c3740;}
+.widget[data-type=daily] .habit-cell,.widget[data-type=daily] .task-check{background-color:transparent;}
+
+/* Tracks: grooves with a lit fill. */
+.task-progress progress,.focus-bar{background:#3c301e17;box-shadow:inset 0 1px 1px #3c301e29;border-radius:4px;}
+.task-progress progress{height:5px;}
+.task-progress progress::-webkit-progress-bar{background:#3c301e17;box-shadow:inset 0 1px 1px #3c301e29;}
+.task-progress progress::-webkit-progress-value{background:var(--enamel);border-radius:4px;}
+.task-progress progress::-moz-progress-bar{background:var(--enamel);}
+.focus-bar{height:4px;left:2px;right:2px;bottom:2px;}
+.focus-bar>span{background:var(--enamel);box-shadow:inset 0 1px 0 #ffffff59;border-radius:4px;}
+
+/* Focus: a timer dial. */
+.timer-preview,.focus-clock{color:#33493a;text-shadow:var(--letterpress);}
+.focus-card .focus-reset,.focus-card .focus-plus{background:var(--key);box-shadow:var(--key-shadow);}
+.focus-card .focus-reset:active,.focus-card .focus-plus:active{box-shadow:var(--key-pressed);}
+.focus-ring::before{content:'';position:absolute;inset:11%;border-radius:50%;background:radial-gradient(circle at 50% 30%,#fffefb,#f1ece2 70%);box-shadow:inset 0 1px 0 #fff,0 0 0 1px #4a3c281a,0 6px 14px -4px #3c301e33,0 18px 36px -14px #3c301e4d;}
+.focus-ring svg{position:relative;}
+.focus-ring-track{stroke:#3c301e14;}
+.focus-ring-value{stroke:#4a7a58;filter:drop-shadow(0 1px 1px #2e4c3759);}
+.focus-chip{background:var(--key);border:0;box-shadow:var(--key-shadow);}
+.focus-chip:hover:not(:disabled){background:linear-gradient(180deg,#fff,#f4f0e7);}
+.focus-chip[aria-pressed=true],.focus-chip-custom.is-active{background:linear-gradient(180deg,#dfe8dc,#e9efe6);box-shadow:var(--key-pressed);color:var(--green);}
+
+/* Links: ceramic buttons. */
+.link-circle{background:radial-gradient(circle at 50% 28%,#fffefb,#f0ebe1 75%);box-shadow:inset 0 1px 0 #fff,inset 0 -1px 0 #4a3c2814,0 0 0 1px #4a3c2814,0 2px 3px #3c301e1f,0 6px 12px -4px #3c301e2e;}
+.link-letter{background:linear-gradient(180deg,#ffffff38,#ffffff00 55%,#0000001a),var(--avatar,#8b7d66);text-shadow:0 -1px 0 #00000033;}
+.link-add .link-circle{background:linear-gradient(180deg,#ece6da,#f7f4ee);box-shadow:inset 0 1px 3px #3c301e33,0 1px 0 #fff;}
+.link-more{background:var(--key);box-shadow:var(--key-shadow);}
+.link-tile-link:hover,.link-tile:focus-within .link-tile-link{background:#4a3c280d;}
+
+/* Savings */
+.savings-total{text-shadow:var(--letterpress);letter-spacing:-.5px;}
+.savings-dot{box-shadow:inset 0 1px 0 #ffffff66,0 0 0 1px #0000001a,0 1px 1px #0000002e;}
+
+/* Porcelain sheets: menus, inspector, dialogs. */
+.widget-menu,.inspector,.modal{
+  background:linear-gradient(180deg,#fffdf9,#f5f1e9);border:0;
+  box-shadow:inset 0 1px 0 #fff,0 0 0 1px #4a3c281a,var(--raise-lg);
+}
+.widget-menu{border-radius:16px;padding:6px;}
+.widget-menu-item{border-radius:10px;}
+.widget-menu-item:hover,.widget-menu-item:focus-visible,.nav-button:hover,.nav-button.active,.destination:hover{background:linear-gradient(180deg,#eee8dc,#f3eee5);box-shadow:inset 0 1px 1px #3c301e14;}
+.widget-menu-title,.savings-summary{border-color:#4a3c281f;box-shadow:0 1px 0 #ffffffb3;}
+#board-options .board-toolbar,#board-options .file-actions,.tasks-done-head{border-color:#4a3c281f;box-shadow:inset 0 1px 0 #ffffffb3;}
+.widget-menu-item.danger{box-shadow:inset 0 1px 0 #ffffffb3;border-radius:0 0 10px 10px;}
+.modal{border-radius:24px;}
+.modal::backdrop{background:#2d261c47;backdrop-filter:blur(4px) saturate(90%);-webkit-backdrop-filter:blur(4px) saturate(90%);}
+.modal h2,.detail-header h1,.board-empty h2{text-shadow:var(--letterpress);}
+.catalog-item{background:linear-gradient(180deg,var(--card-top),var(--card-bottom));border:0;border-radius:16px;box-shadow:var(--hi),var(--rim),var(--raise-sm);transition:box-shadow .2s var(--ease),translate .2s var(--ease);}
+.catalog-item.tone-paper{background:linear-gradient(180deg,#fdf3c9,#fbefc4);}
+.catalog-item.tone-sage{background:linear-gradient(180deg,#f2f5ee,#e4ebe0);}
+.catalog-item.tone-sand{background:linear-gradient(180deg,#f8f1e7,#ede2d3);}
+.catalog-item:hover{translate:0 -2px;box-shadow:var(--hi),var(--rim),0 0 0 2px #3f6a4e4d,var(--raise);}
+.catalog-item:active{translate:0 0;box-shadow:var(--key-pressed);}
+.view-switch,#board-options .canvas-controls{background:#4a3c2812;border:0;box-shadow:inset 0 1px 3px #3c301e29,0 1px 0 #ffffffb3;}
+.view-switch button[aria-pressed=true]{background:var(--key);box-shadow:var(--key-shadow);}
+
+/* Snackbar: a dark pebble, readable over any card. */
+.toast{background:linear-gradient(180deg,#43453f,#2f312c);color:#f3f0e8;border:0;border-radius:14px;box-shadow:inset 0 1px 0 #ffffff26,0 0 0 1px #00000033,var(--raise-lg);}
+.toast-action{color:#b5dbbd;}
+.toast-action:hover{background:#ffffff1a;}
+
+/* Widget screen: one large sheet of card stock. */
+.detail-content{background:linear-gradient(180deg,var(--card-top),var(--card-bottom));border-radius:22px;box-shadow:var(--hi),inset 0 -1px 0 #4a3c2812,var(--rim),var(--raise);}
+#page-title:focus{outline:none;}
+.detail-header #back{padding:7px 13px 7px 10px;border-radius:999px;background:var(--key);box-shadow:var(--key-shadow);text-decoration:none;color:var(--text);font-weight:500;}
+.detail-header #back:active{box-shadow:var(--key-pressed);}
+.task-item.dragging,.habit-row.dragging{background:var(--card-top);box-shadow:var(--rim),var(--raise);}
+
+/* Empty board art follows the same materials. */
+.empty-pane{background:linear-gradient(180deg,var(--card-top),var(--card-bottom));border:0;box-shadow:var(--hi),var(--rim),var(--raise);}
+
+@media(prefers-contrast:more){
+  .widget,.modal,.widget-menu,.inspector,.button,.workspace-dock .icon-button{box-shadow:0 0 0 1px #6a695c,var(--raise-sm);}
+  input,textarea,select,.task-check,.habit-cell{box-shadow:inset 0 0 0 1px #6a695c;}
+}
+@media(prefers-reduced-motion:reduce){.catalog-item:hover{translate:0 0;}}
+@media(forced-colors:active){.task-check:checked,.habit-cell.is-done{background:Highlight;}}
+/* Snackbar sits at the bottom, away from titles and the dock. */
+.toast{top:auto;bottom:max(24px,calc(env(safe-area-inset-bottom) + 16px));transform:translateY(10px);}
+.toast.visible{transform:translateY(0);}
