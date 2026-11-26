@@ -47,3 +47,18 @@ test('daily history survives board reload and invalid marks are rejected',()=>{
   data.actions[0].completed[2]='2026-11-15';
   assert.equal(validateDaily(data),false);
 });
+
+import {streak, weekEnding, shiftDay} from '../dist/widgets/daily-data.js';
+
+test('streak counts days in a row and is not broken before the day ends', () => {
+  assert.equal(streak(['2026-11-24', '2026-11-25', '2026-11-26'], '2026-11-26'), 3);
+  assert.equal(streak(['2026-11-24', '2026-11-25'], '2026-11-26'), 2);
+  assert.equal(streak(['2026-11-23', '2026-11-25'], '2026-11-26'), 1);
+  assert.equal(streak(['2026-11-20'], '2026-11-26'), 0);
+  assert.equal(streak(['2026-02-28', '2026-03-01'], '2026-03-01'), 2);
+});
+
+test('week navigation crosses months', () => {
+  assert.deepEqual(weekEnding('2026-12-02'), ['2026-11-26','2026-11-27','2026-11-28','2026-11-29','2026-11-30','2026-12-01','2026-12-02']);
+  assert.equal(shiftDay('2026-11-26', 7), '2026-12-03');
+});

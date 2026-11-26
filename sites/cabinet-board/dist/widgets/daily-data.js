@@ -40,3 +40,32 @@ export function setDayDone(actions, id, day, done) {
     return {...item, completed};
   });
 }
+
+/** Days in a row up to today; a streak is not broken until today is over. */
+export function streak(completed, today = localDate()) {
+  const done = new Set(completed);
+  const date = new Date(today + 'T12:00:00Z');
+  if (!done.has(today)) date.setUTCDate(date.getUTCDate() - 1);
+  let count = 0;
+  while (done.has(date.toISOString().slice(0, 10))) {
+    count++;
+    date.setUTCDate(date.getUTCDate() - 1);
+  }
+  return count;
+}
+
+/** Seven calendar days ending with `end` (YYYY-MM-DD). */
+export function weekEnding(end) {
+  const date = new Date(end + 'T12:00:00Z');
+  return Array.from({length: 7}, (_, index) => {
+    const day = new Date(date);
+    day.setUTCDate(date.getUTCDate() + index - 6);
+    return day.toISOString().slice(0, 10);
+  });
+}
+
+export function shiftDay(day, offset) {
+  const date = new Date(day + 'T12:00:00Z');
+  date.setUTCDate(date.getUTCDate() + offset);
+  return date.toISOString().slice(0, 10);
+}

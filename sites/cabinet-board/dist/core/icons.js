@@ -15,6 +15,16 @@ const paths={
   duplicate:['M9 9h11v11H9Z','M15 5V3H3v12h2'],front:['m7 10 5-5 5 5M12 5v14'],
   undo:['M8 4 3 9l5 5','M3 9h11a6 6 0 0 1 0 12'],
   move:['m8 6 4-4 4 4M12 2v20m-4-4 4 4 4-4M6 8l-4 4 4 4M2 12h20m-4-4 4 4-4 4'],
+  play:['M8 5.5v13a.5.5 0 0 0 .77.42l10-6.5a.5.5 0 0 0 0-.84l-10-6.5A.5.5 0 0 0 8 5.5Z'],
+  pause:['M9 5v14M15 5v14'],
+  reset:['M4.5 12a7.5 7.5 0 1 0 2.2-5.3','M4 4v5h5'],
+  edit:['M4 20h4L19 9l-4-4L4 16Z','m13.5 6.5 4 4'],
+  trash:['M4 7h16','M10 11v6M14 11v6','M6 7l1 13h10l1-13','M9 7V4h6v3'],
+  history:['M4 12a8 8 0 1 0 2.4-5.7','M4 4v4h4','M12 8v4l3 2'],
+  sliders:['M4 7h9M17 7h3M4 17h3M11 17h9','M15 5v4M9 15v4'],
+  'chevron-left':['m15 6-6 6 6 6'],'chevron-right':['m9 6 6 6-6 6'],'chevron-down':['m6 9 6 6 6-6'],
+  'arrow-up':['M12 19V5m-6 6 6-6 6 6'],'arrow-down':['M12 5v14m-6-6 6 6 6-6'],
+  open:['M14 4h6v6','M20 4 11 13','M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5'],
   unknown:['m12 3 9 9-9 9-9-9Z'],
 };
 export function icon(name){

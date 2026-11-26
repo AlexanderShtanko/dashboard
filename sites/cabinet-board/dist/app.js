@@ -115,8 +115,17 @@ const widgetMenu=createWidgetMenu((action,id)=>{
   const controls={move:'#move',duplicate:'#duplicate',front:'#front',delete:'#delete'};
   if(controls[action])$(controls[action]).click();
 });
-function stopStatus(){const toast=$('#status');clearTimeout(statusTimeout);toast.classList.remove('visible');toast.textContent='';}
-function status(text){const toast=$('#status');toast.textContent=text;clearTimeout(statusTimeout);if(text==='Сохранено в этом браузере.'||text==='Сохраняю…'){toast.classList.remove('visible');return;}toast.classList.add('visible');if(!store.error)statusTimeout=setTimeout(()=>toast.classList.remove('visible'),4500);}
+function stopStatus(){const toast=$('#status');clearTimeout(statusTimeout);toast.classList.remove('visible','has-action');toast.textContent='';}
+// A snackbar like in Google apps: a short message and, optionally, one action such as «Отменить».
+function status(text,act){
+  const toast=$('#status');clearTimeout(statusTimeout);
+  toast.replaceChildren(el('span',{class:'toast-text'},text));
+  toast.classList.toggle('has-action',!!act);
+  if(text==='Сохранено в этом браузере.'||text==='Сохраняю…'){toast.classList.remove('visible');return;}
+  if(act)toast.append(el('button',{type:'button',class:'toast-action',onClick:()=>{stopStatus();attempt(act.run);}},act.label||'Отменить'));
+  toast.classList.add('visible');
+  if(!store.error)statusTimeout=setTimeout(()=>toast.classList.remove('visible','has-action'),act?7000:4500);
+}
 function attempt(operation){try{return operation();}catch(error){status(error.message);return null;}}
 function updateCloudControls(){
   const box=$('#cloud-actions');box.hidden=!cloud?.available;if(box.hidden)return;
@@ -140,7 +149,13 @@ function openNode(id){const node=store.get(id);if(!node)return;$('#board-options
 function disposeCards(){for(const dispose of cardCleanup)attempt(dispose);cardCleanup=[];}
 function disposeScreen(){const dispose=screenCleanup;screenCleanup=null;if(dispose)attempt(dispose);}
 function mount(result,container,screen=false){if(result?.element){container.append(result.element);if(result.dispose){if(screen)screenCleanup=result.dispose;else cardCleanup.push(result.dispose);}}else if(result instanceof Node)container.append(result);}
-function ctx(node){return {node,registry,latest:()=>store.get(node.id)||node,children:id=>store.children(id).map(child=>lockFor(child.id)?{type:null,title:lockedTitle,locked:true}:child),open:()=>openNode(node.id),update:data=>attempt(()=>{store.update(node.id,{data});if(!store.error)status('Сохранено в этом браузере.');}),feedback:status};}
+// update(data,{render:false}) lets a card redraw itself, so typing or ticking a box keeps focus.
+let quietUpdate=false;
+function ctx(node){return {node,registry,latest:()=>store.get(node.id)||node,
+  children:id=>store.children(id).map(child=>lockFor(child.id)?{id:child.id,type:null,title:lockedTitle,locked:true}:child),
+  open:()=>openNode(node.id),openChild:id=>{if(lockFor(id))unlockCard(id);else openNode(id);},
+  update:(data,options={})=>attempt(()=>{quietUpdate=options.render===false;try{store.update(node.id,{data});}finally{quietUpdate=false;}if(!store.error&&!options.silent)status('Сохранено в этом браузере.');}),
+  feedback:status};}
 function sidebar(){const navigation=$('#navigation');navigation.replaceChildren(action('▦  Моя доска',()=>go(),'nav-button '+(route.kind==='board'&&!route.id?'active':'')),el('span',{class:'nav-label'},'ПАПКИ'));for(const folder of store.state.nodes.filter(n=>n.type==='folder'&&!lockFor(n.id))){const depth=store.ancestors(folder.id).length-1;const button=action('▱  '+folder.title,()=>go(folder.id),'nav-button '+(route.id===folder.id?'active':''));button.style.paddingLeft=(14+Math.min(depth,5)*12)+'px';navigation.append(button);}navigation.append(action('＋  Новая папка',()=>addType('folder'),'nav-button new-folder'));}
 function heading(){
   const node=route.id?store.get(route.id):null;
@@ -213,7 +228,7 @@ function navigate(){
 }
 function refresh(){
   sidebar();heading();updatePinControls();$('#undo').disabled=!store.history.length;
-  if(!board.hidden&&!lockFor(route.id))renderBoard();
+  if(!board.hidden&&!lockFor(route.id)&&!quietUpdate)renderBoard();
   saved();
 }
 store.subscribe(refresh);

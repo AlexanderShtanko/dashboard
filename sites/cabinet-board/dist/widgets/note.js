@@ -1,12 +1,25 @@
 import {el} from '../core/dom.js';
-export const note={type:'note',version:1,title:'Заметка',description:'Мысль на полях или целая история. Открывается в редактор.',icon:'note',tone:'paper',size:{w:290,h:250},createData:()=>({body:''}),validate:d=>typeof d.body==='string'&&d.body.length<=100000,
-renderCard({node,open}){return el('button',{class:'note-preview',onClick:open,'aria-label':'Открыть заметку '+node.title},node.data.body||'Здесь есть место для мысли…');},
-renderScreen({node,update,feedback}){
-  const input=el('textarea',{class:'note-editor','aria-label':'Текст заметки',placeholder:'Начни писать…',maxlength:100000,value:node.data.body});
-  let debounce;
-  const save=()=>{clearTimeout(debounce);update({body:input.value});};
-  input.addEventListener('input',()=>{feedback('Сохраняю…');clearTimeout(debounce);debounce=setTimeout(save,350);});
+
+// Like a sticky note in Google Keep: type right on the card, it saves by itself.
+// The separate screen is a larger editor for the same text. Data format v1: {body}.
+function editor(ctx,{screen=false}={}){
+  const input=el('textarea',{class:screen?'note-editor':'note-inline card-scroll','aria-label':'Текст заметки: '+ctx.node.title,
+    placeholder:screen?'Начните писать…':'Заметка…',maxlength:100000,value:ctx.node.data.body,spellcheck:'true'});
+  let debounce,saved=ctx.node.data.body;
+  const save=()=>{
+    clearTimeout(debounce);
+    if(input.value===saved)return;
+    saved=input.value;
+    ctx.update({body:input.value},{render:false,silent:true});
+  };
+  input.addEventListener('input',()=>{clearTimeout(debounce);debounce=setTimeout(save,400);});
   input.addEventListener('blur',save);
+  input.addEventListener('keydown',event=>{if(event.key==='Escape'&&!screen){event.preventDefault();save();input.blur();}});
   return {element:input,dispose:save};
 }
+
+export const note={type:'note',version:1,title:'Заметка',description:'Мысль на полях или целая история. Пишите прямо на карточке.',icon:'note',tone:'paper',size:{w:290,h:250},
+  createData:()=>({body:''}),validate:d=>typeof d.body==='string'&&d.body.length<=100000,
+  renderCard:ctx=>editor(ctx),
+  renderScreen:ctx=>editor(ctx,{screen:true}),
 };
