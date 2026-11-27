@@ -48,3 +48,17 @@ test('a board with no saved background is grey, and the wallpaper stays a choice
   assert.equal(boardBackground('wallpaper'),'wallpaper');assert.equal(boardBackground('peach'),'peach');
   for(const [key] of BOARD_BACKGROUNDS)assert.ok(BACKGROUND_THEME[key],key);
 });
+test('theme follows the system until the owner picks light or dark',async()=>{
+  const {readFileSync}=await import('node:fs');const vm=await import('node:vm');
+  const saved=new Map();let systemDark=true;const root={dataset:{}};
+  const window={dispatchEvent(){},addEventListener(){}};
+  const context={window,document:{documentElement:root},Event:class{},
+    localStorage:{getItem:key=>saved.get(key)??null,setItem:(key,value)=>saved.set(key,value),removeItem:key=>saved.delete(key)},
+    matchMedia:()=>({get matches(){return systemDark;},addEventListener(){}})};
+  vm.runInNewContext(readFileSync(new URL('../dist/theme.js',import.meta.url),'utf8'),context);
+  const theme=window.cabinetTheme;
+  assert.equal(theme.mode,'auto');assert.equal(root.dataset.theme,'dark');
+  theme.set('light');assert.equal(theme.mode,'light');assert.equal(root.dataset.theme,'light');
+  systemDark=false;theme.set('dark');assert.equal(root.dataset.theme,'dark');
+  theme.set('auto');assert.equal(theme.mode,'auto');assert.equal(root.dataset.theme,'light');assert.equal(saved.size,0);
+});

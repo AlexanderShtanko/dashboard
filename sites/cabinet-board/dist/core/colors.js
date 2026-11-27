@@ -10,6 +10,7 @@ export const BOARD_BACKGROUNDS=[
 ];
 // Page colour for the browser toolbar (theme-color), per background.
 export const BACKGROUND_THEME={wallpaper:'#e8eef7',blue:'#dbe7fb',green:'#dcefe3',yellow:'#f4ecd2',peach:'#f9e4d8',pink:'#f6e0e9',purple:'#e8e1f7',grey:'#e4e7ec',white:'#f8fafd'};
+export const BACKGROUND_THEME_DARK={wallpaper:'#14161a',blue:'#111a2b',green:'#101f18',yellow:'#211d0e',peach:'#241812',pink:'#23141b',purple:'#1a1629',grey:'#17181a',white:'#2a2c30'};
 export const isColorKey=value=>typeof value==='string'&&/^[a-z]{1,20}$/.test(value);
 const known=list=>new Set(list.map(([key])=>key));
 const cards=known(CARD_COLORS),backgrounds=known(BOARD_BACKGROUNDS);
