@@ -129,29 +129,33 @@ function outLabel(node){
   const up=store.get(folder.parentId);
   return up?'Вынести в «'+up.title+'»':'Вынести на доску';
 }
-function moveTo(id,dest,position){
-  const node=store.get(id);if(!node||lockFor(id))return false;
+// A card closed with its own PIN may be carried out of an open folder without opening it (carryLocked):
+// only its place changes, and its name is not shown. A card inside a closed folder stays put.
+const lockedByOther=id=>{const lock=lockFor(id);return !!lock&&lock.id!==id;};
+function moveTo(id,dest,position,{carryLocked=false}={}){
+  const node=store.get(id),closed=!!lockFor(id);if(!node||(carryLocked?lockedByOther(id):closed))return false;
   if(!attempt(()=>{store.move(id,dest,position);return true;}))return false;
   const mark=store.history.at(-1),target=dest?store.get(dest)?.title:null;
   selected=null;finishEditing();if(!board.hidden)renderBoard();
-  status('«'+node.title+'» — '+(target?'теперь в «'+target+'».':'теперь на доске.'),{label:'Отменить',run:()=>{
+  status('«'+(closed?lockedTitle:node.title)+'» — '+(target?'теперь в «'+target+'».':'теперь на доске.'),{label:'Отменить',run:()=>{
     if(store.history.at(-1)!==mark){status('После переноса были другие изменения. Отмена по шагам — в меню.');return;}
     store.undo();
   }});
   return true;
 }
 function moveOut(id){
-  const node=store.get(id),folder=store.get(node?.parentId);if(!folder||lockFor(id))return;
+  const node=store.get(id),folder=store.get(node?.parentId);if(!folder||lockedByOther(id))return;
   const l=folder.layout;
-  moveTo(id,folder.parentId,{x:l.x+36,y:l.y+l.h/2+node.layout.h/2+28});
+  moveTo(id,folder.parentId,{x:l.x+36,y:l.y+l.h/2+node.layout.h/2+28},{carryLocked:true});
 }
 // A tile dragged off a folder card: it lands where it was dropped, or in the folder it was dropped on.
 function dropChild(id,clientX,clientY){
-  const node=store.get(id),folder=store.get(node?.parentId);if(!folder||lockFor(id))return;
+  const node=store.get(id),folder=store.get(node?.parentId);if(!folder||lockedByOther(id))return;
   if(list||board.hidden||folder.parentId!==currentParent){moveOut(id);return;}
   const p=point({clientX,clientY});
-  const target=store.children(currentParent).filter(n=>n.type==='folder'&&n.id!==folder.id&&!lockFor(n.id)&&store.canMove(id,n.id)&&containsPoint(n.layout,p)).at(-1);
-  if(target)moveTo(id,target.id);else moveTo(id,folder.parentId,{x:clamp(p.x,-100000,100000),y:clamp(p.y,-100000,100000)});
+  // A closed card is only set down on the board: putting it into another folder needs the PIN, as on the board.
+  const target=lockFor(id)?null:store.children(currentParent).filter(n=>n.type==='folder'&&n.id!==folder.id&&!lockFor(n.id)&&store.canMove(id,n.id)&&containsPoint(n.layout,p)).at(-1);
+  if(target)moveTo(id,target.id);else moveTo(id,folder.parentId,{x:clamp(p.x,-100000,100000),y:clamp(p.y,-100000,100000)},{carryLocked:true});
 }
 function renameCard(id){
   const node=store.get(id);if(!node)return;
