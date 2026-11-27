@@ -8,6 +8,14 @@ const glyph=value=>typeof value==='string'&&/^[a-z-]+$/.test(value)?icon(value):
 export const reducedMotion=()=>globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 export const coarsePointer=()=>globalThis.matchMedia?.('(pointer: coarse)').matches;
 
+/** A touch outside an open menu only closes it: the tap must not also press what is underneath. */
+export function swallowTap(event){
+  if(event.pointerType!=='touch')return;
+  const stop=click=>{click.preventDefault();click.stopPropagation();};
+  document.addEventListener('click',stop,{capture:true,once:true});
+  setTimeout(()=>document.removeEventListener('click',stop,true),700);
+}
+
 let active=null;
 
 export function closeMenu(restoreFocus=false){
@@ -36,7 +44,7 @@ export function openMenu(anchor,{title,items,className=''}){
   anchor.setAttribute('aria-expanded','true');
   const buttons=[...menu.querySelectorAll('button:not(:disabled)')];
   buttons[0]?.focus({preventScroll:true});
-  const outside=event=>{if(!menu.contains(event.target)&&!anchor.contains(event.target))closeMenu();};
+  const outside=event=>{if(!menu.contains(event.target)&&!anchor.contains(event.target)){swallowTap(event);closeMenu();}};
   const keys=event=>{
     if(event.key==='Escape'){event.preventDefault();event.stopPropagation();closeMenu(true);return;}
     if(event.key==='Tab'){closeMenu();return;}

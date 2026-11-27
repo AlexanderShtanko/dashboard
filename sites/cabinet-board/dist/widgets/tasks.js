@@ -108,7 +108,7 @@ export const tasks={type:'tasks',version:1,title:'Задачи',description:'С�
   renderCard:ctx=>checklist(ctx),
   renderScreen(ctx){
     const view=checklist(ctx,{screen:true});
-    const help=el('p',{class:'muted tasks-help'},'Нажмите на задачу, чтобы изменить текст. Перетащите мышью, чтобы поменять порядок. ⋯ или правая кнопка открывают меню.');
+    const help=el('p',{class:'muted tasks-help'},coarsePointer()?'Нажмите на задачу, чтобы изменить текст. Удержите её или нажмите ⋯, чтобы открыть меню и поменять порядок.':'Нажмите на задачу, чтобы изменить текст. Перетащите мышью, чтобы поменять порядок. ⋯ или правая кнопка открывают меню.');
     return {element:el('div',{},view.element,help),dispose:view.dispose};
   },
 };

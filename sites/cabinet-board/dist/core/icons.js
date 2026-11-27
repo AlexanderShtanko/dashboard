@@ -25,6 +25,10 @@ const paths={
   'chevron-left':['m15 6-6 6 6 6'],'chevron-right':['m9 6 6 6-6 6'],'chevron-down':['m6 9 6 6 6-6'],
   'arrow-up':['M12 19V5m-6 6 6-6 6 6'],'arrow-down':['M12 5v14m-6-6 6 6 6-6'],
   open:['M14 4h6v6','M20 4 11 13','M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5'],
+  fit:['M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4','M9 9h6v6H9Z'],
+  cloud:['M7 18a4 4 0 0 1-.6-7.96A6 6 0 0 1 18 9.5a4.25 4.25 0 0 1-.5 8.5Z'],
+  download:['M12 4v11m-4-4 4 4 4-4','M5 19h14'],upload:['M12 15V4m-4 4 4-4 4 4','M5 19h14'],
+  board:['M4 5h7v6H4ZM13 5h7v9h-7ZM4 13h7v6H4ZM13 16h7v3h-7Z'],
   unknown:['m12 3 9 9-9 9-9-9Z'],
 };
 export function icon(name){

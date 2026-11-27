@@ -9,6 +9,7 @@ import {icon} from './core/icons.js';
 import {PIN_KEY,createPinDialog} from './core/pin.js';
 import {openStorage} from './core/storage.js';
 import {SYNC_STATUS_KEY} from './core/sync.js';
+import {openDialog,field,coarsePointer} from './core/ui.js';
 import {CAMERA_KEY,createCameraMemory} from './core/camera.js';
 import {setupCloud,CLOUD_KEYS} from './core/cloud.js';
 import {DRIVE_STATUS_KEY,DRIVE_SETTINGS_KEY} from './core/drive.js';
@@ -64,13 +65,15 @@ function updatePinControls(){
   const canLock=unlocked.size>0;
   $('#pin-lock-all').hidden=!canLock;
   $('#detail-lock').hidden=!canLock;
-  $('#pin-settings').textContent=attempt(()=>storage.getItem(PIN_KEY))?'Изменить PIN':'Настроить PIN';
+  $('#pin-settings-label').textContent=attempt(()=>storage.getItem(PIN_KEY))?'Изменить PIN':'Настроить PIN';
 }
 const hold=createHoldGesture({
   activate:(id,pointer)=>{
-    suppressClickUntil=performance.now()+800;beginEditing(id,{showInspector:list,announce:list});
+    suppressClickUntil=performance.now()+800;
     const frame=all('.widget').find(frame=>frame.dataset.id===id);
-    if(!list&&frame)startCardDrag(frame,pointer);
+    if(list){const button=frame?.querySelector('.widget-options');if(button)cardMenu(button,id);return;}
+    beginEditing(id,{showInspector:false,announce:false});
+    if(frame)startCardDrag(frame,pointer);
   },
   feedback:(id,active)=>all('.widget').find(frame=>frame.dataset.id===id)?.classList.toggle('holding',active),
 });
@@ -80,10 +83,11 @@ function beginEditing(id,{showInspector=true,announce=true}={}){
   const frame=all('.widget').find(frame=>frame.dataset.id===id);
   frame?.classList.remove('edit-enter');void frame?.offsetWidth;frame?.classList.add('edit-enter');
   frame?.querySelector('[data-drag]')?.focus({preventScroll:true});
-  if(announce)status(list?'Редактирование карточки. Название — в параметрах; размер и поворот доступны в режиме «Доска».':'Двигай карточку за любую область. Углы меняют размер, круг — поворот.');
+  if(announce)status(coarsePointer()?'Двигай карточку пальцем. Углы меняют размер, круг — поворот. Галочка — готово.':'Углы меняют размер, круг — поворот. Esc или галочка — готово.');
 }
 function finishEditing(){hold.cancel();editingId=null;inspectorVisible=false;selected=null;inspect();highlight();}
-for(const [id,name] of Object.entries({'board-menu':'menu','add-widget':'plus',fullscreen:'expand',duplicate:'duplicate',front:'front',delete:'close',undo:'undo','pan-mode':'move','zoom-out':'minus','zoom-in':'plus',fit:'expand'}))$('#'+id).replaceChildren(icon(name));
+for(const [id,name] of Object.entries({'board-menu':'menu','add-widget':'plus','dock-fit':'fit',fullscreen:'expand',duplicate:'duplicate',front:'front',delete:'trash','pan-mode':'move','zoom-out':'minus','zoom-in':'plus'}))$('#'+id).replaceChildren(icon(name));
+for(const [id,name] of Object.entries({undo:'undo','pin-settings':'lock','pin-lock-all':'lock','drive-connect':'cloud','drive-signin':'cloud','drive-disconnect':'cloud',export:'download',import:'upload'}))$('#'+id+' .menu-item-icon').replaceChildren(icon(name));
 all('[data-close].icon-button').forEach(button=>button.replaceChildren(icon('close')));
 const widgetMenu=createWidgetMenu((action,id)=>{
   if(!store.get(id)||lockFor(id))return;
@@ -107,14 +111,22 @@ const widgetMenu=createWidgetMenu((action,id)=>{
   }
   selected=id;inspect();highlight();
   if(action==='open'){openNode(id);return;}
-  if(action==='settings'){
-    beginEditing(id);
-    $('#item-title').focus({preventScroll:true});$('#item-title').select();
-    return;
-  }
+  if(action==='rename'){renameCard(id);return;}
+  if(action==='settings'){beginEditing(id,{showInspector:!coarsePointer()});return;}
+  if(action==='up'||action==='down'){attempt(()=>store.shift(id,action==='up'?-1:1));all('.widget').find(frame=>frame.dataset.id===id)?.scrollIntoView({block:'nearest',behavior:'smooth'});return;}
   const controls={move:'#move',duplicate:'#duplicate',front:'#front',delete:'#delete'};
   if(controls[action])$(controls[action]).click();
 });
+function renameCard(id){
+  const node=store.get(id);if(!node)return;
+  const input=el('input',{value:node.title,maxlength:160,enterkeyhint:'done',autocomplete:'off'});
+  openDialog({title:'Название карточки',body:[field('Название',input)],submitLabel:'Сохранить',onSubmit:()=>{
+    const title=input.value.trim();if(!title)return 'Введи название.';
+    attempt(()=>store.update(id,{title}));
+    if(route.kind==='widget')heading();
+  }});
+  input.select();
+}
 function stopStatus(){const toast=$('#status');clearTimeout(statusTimeout);toast.classList.remove('visible','has-action');toast.textContent='';}
 // A snackbar like in Google apps: a short message and, optionally, one action such as «Отменить».
 function status(text,act){
@@ -156,24 +168,41 @@ function ctx(node){return {node,registry,latest:()=>store.get(node.id)||node,
   open:()=>openNode(node.id),openChild:id=>{if(lockFor(id))unlockCard(id);else openNode(id);},
   update:(data,options={})=>attempt(()=>{quietUpdate=options.render===false;try{store.update(node.id,{data});}finally{quietUpdate=false;}if(!store.error&&!options.silent)status('Сохранено в этом браузере.');}),
   feedback:status};}
-function sidebar(){const navigation=$('#navigation');navigation.replaceChildren(action('▦  Моя доска',()=>go(),'nav-button '+(route.kind==='board'&&!route.id?'active':'')),el('span',{class:'nav-label'},'ПАПКИ'));for(const folder of store.state.nodes.filter(n=>n.type==='folder'&&!lockFor(n.id))){const depth=store.ancestors(folder.id).length-1;const button=action('▱  '+folder.title,()=>go(folder.id),'nav-button '+(route.id===folder.id?'active':''));button.style.paddingLeft=(14+Math.min(depth,5)*12)+'px';navigation.append(button);}navigation.append(action('＋  Новая папка',()=>addType('folder'),'nav-button new-folder'));}
+function sidebar(){
+  const navigation=$('#navigation');
+  const row=(glyph,label,run,cls='')=>el('button',{type:'button',class:'nav-button '+cls,onClick:run},el('span',{class:'menu-item-icon','aria-hidden':'true'},icon(glyph)),el('span',{},label));
+  navigation.replaceChildren(row('board','Моя доска',()=>go(),route.kind==='board'&&!route.id?'active':''));
+  for(const folder of store.state.nodes.filter(n=>n.type==='folder'&&!lockFor(n.id))){
+    const depth=store.ancestors(folder.id).length-1,button=row('folder',folder.title,()=>go(folder.id),route.id===folder.id?'active':'');
+    button.style.paddingLeft=(12+Math.min(depth+1,6)*14)+'px';navigation.append(button);
+  }
+  navigation.append(row('plus','Новая папка',()=>addType('folder'),'new-folder'));
+}
 function heading(){
   const node=route.id?store.get(route.id):null;
   const locked=lockFor(route.id);
   $('#page-title').textContent=locked?lockedTitle:route.kind==='widget'?node?.title||'':'';
+  const parent=store.get((locked||node)?.parentId),backLabel=parent&&!lockFor(parent.id)?parent.title:'Моя доска';
+  $('#back').replaceChildren(icon('chevron-left'),el('span',{},backLabel));$('#back').setAttribute('aria-label','Назад: '+backLabel);
   const crumbs=$('#breadcrumbs');
   crumbs.replaceChildren(action('Моя доска',()=>go(),'crumb'));
   if(node&&!locked&&route.kind==='board')for(const ancestor of store.ancestors(node.id)){
     crumbs.append(el('span',{'aria-hidden':'true'},'/'),action(ancestor.title,()=>go(ancestor.id),'crumb'));
   }
 }
-function inspect(){const node=lockFor(selected)?null:store.get(selected);$('#inspector').hidden=!inspectorVisible||!node||board.hidden;$('#item-title').value=node?.title??'';if(!node)return;$('#item-width').value=Math.round(node.layout.w);$('#item-height').value=Math.round(node.layout.h);$('#item-angle').value=Math.round(node.layout.rotation);const min=registry.get(node.type)?.minSize||{w:220,h:170};$('#item-width').min=min.w;$('#item-height').min=min.h;for(const id of ['item-width','item-height','item-angle'])$('#'+id).disabled=list;}
+function inspect(){const node=lockFor(selected)?null:store.get(selected);$('#inspector').hidden=!inspectorVisible||!node||board.hidden;$('#item-title').value=node?.title??'';if(!node)return;$('#item-width').value=Math.round(node.layout.w);$('#item-height').value=Math.round(node.layout.h);$('#item-angle').value=Math.round(node.layout.rotation);const min=registry.get(node.type)?.minSize||{w:220,h:170};$('#item-width').min=min.w;$('#item-height').min=min.h;}
 function paintCamera(){world.style.transform=list?'':`translate(${camera.x}px,${camera.y}px) scale(${camera.z})`;world.style.setProperty('--inverse',1/camera.z);board.style.backgroundSize=`${24*camera.z}px ${24*camera.z}px`;board.style.backgroundPosition=`${camera.x}px ${camera.y}px`;$('#zoom-value').textContent=Math.round(camera.z*100)+'%';board.classList.toggle('hand',hand||space);}
 function paintLayout(frame,layout){frame.style.left=layout.x-layout.w/2+'px';frame.style.top=layout.y-layout.h/2+'px';frame.style.width=layout.w+'px';frame.style.height=layout.h+'px';frame.style.transform=`rotate(${layout.rotation}deg)`;}
+function cardMenu(button,id){
+  const node=store.get(id);if(!node||lockFor(id))return;
+  const siblings=store.children(currentParent),index=siblings.findIndex(item=>item.id===id);
+  selected=id;inspect();highlight();
+  widgetMenu.show(button,node,{canOpen:node.type==='folder'||!!registry.get(node.type)?.renderScreen,list,first:index===0,last:index===siblings.length-1});
+}
 function renderBoard(){
   pendingMouseDrag=null;hold.cancel();widgetMenu.close();disposeCards();world.replaceChildren();const children=store.children(currentParent);
   if(editingId&&!children.some(node=>node.id===editingId)){editingId=null;inspectorVisible=false;}
-  board.classList.toggle('list-view',list);$('#canvas-controls').hidden=list;$('#view-canvas').setAttribute('aria-pressed',String(!list));$('#view-list').setAttribute('aria-pressed',String(list));$('#undo').disabled=!store.history.length;$('#count').textContent=children.length+' на доске';$('#board-empty').hidden=!!children.length;
+  board.classList.toggle('list-view',list);$('#canvas-controls').hidden=list;$('#dock-fit').hidden=list||!children.length;$('#board-help').textContent=boardHelp();$('#view-canvas').setAttribute('aria-pressed',String(!list));$('#view-list').setAttribute('aria-pressed',String(list));$('#undo').disabled=!store.history.length;$('#count').textContent=cardCount(children.length);$('#board-empty').hidden=!!children.length;
   for(const [index,node] of children.entries()){
     if(lockFor(node.id)){
       const frame=el('article',{class:'widget locked-card','data-id':node.id,'aria-label':lockedTitle},
@@ -186,13 +215,13 @@ function renderBoard(){
     const dragHandle = el('button', {
       class:'widget-drag', 'data-drag':true,
       'aria-label':(opensDetails ? 'Открыть: ' : 'Выбрать: ') + node.title,
-      title:list ? node.title : node.title + ' · Потяни, чтобы переместить',
+      title:node.title,
       onClick:()=>{
         if (opensDetails && editingId !== node.id) {openNode(node.id);return;}
         selected=node.id;inspect();highlight();
       },
     }, symbol(def?.icon), el('span',{},node.title));
-    const options=el('button',{class:'widget-options',type:'button','aria-label':'Параметры '+node.title,'aria-haspopup':'menu','aria-controls':'widget-menu','aria-expanded':'false',onClick:event=>{selected=node.id;inspect();highlight();widgetMenu.show(event.currentTarget,node,node.type==='folder'||!!def?.renderScreen);}},icon('more'));
+    const options=el('button',{class:'widget-options',type:'button','aria-label':'Параметры '+node.title,'aria-haspopup':'menu','aria-controls':'widget-menu','aria-expanded':'false',onClick:event=>cardMenu(event.currentTarget,node.id)},icon('more'));
     const done=el('button',{class:'card-edit-done',type:'button',hidden:true,'aria-label':'Закончить редактирование '+node.title,onClick:finishEditing},icon('check'));
     const header=el('header',{class:'widget-header'},dragHandle,options,done);frame.append(header);
     const content=el('div',{class:'widget-content'});try{if(def)mount(def.renderCard(ctx(node)),content);else content.append(el('p',{class:'muted'},'Модуль «'+node.type+'» не подключён. Данные сохранены.'));}catch(error){content.append(el('p',{class:'muted'},'Не удалось открыть виджет. '+error.message));}frame.append(content);
@@ -222,7 +251,7 @@ function navigate(){
   if(hasNavigated)rememberCamera();hasNavigated=true;
   disposeScreen();disposeCards();$('#detail-content').replaceChildren();world.replaceChildren();route=parseRoute();selected=null;
   const node=route.id?store.get(route.id):null;if(route.id&&!node||route.kind==='board'&&node&&node.type!=='folder'){status('Эта папка или виджет больше не существует.');history.replaceState(null,'','#/board');route={kind:'board',id:null};}
-  const detail=route.kind==='widget'||!!lockFor(route.id);document.body.classList.toggle('detail-mode',detail);$('#breadcrumbs').hidden=detail||!route.id;$('#board').hidden=detail;$('#detail').hidden=!detail;$('#board-toolbar').hidden=detail;$('#canvas-controls').hidden=detail||list;$('.workspace-dock').hidden=detail;$('#board-help').hidden=detail;
+  const detail=route.kind==='widget'||!!lockFor(route.id);document.body.classList.toggle('detail-mode',detail);$('#breadcrumbs').hidden=detail||!route.id;$('#board').hidden=detail;$('#detail').hidden=!detail;$('#board-toolbar').hidden=detail;$('#canvas-controls').hidden=detail||list;$('.workspace-dock').hidden=detail;
   heading();sidebar();inspect();updatePinControls();
   if(detail)renderScreen();else{currentParent=route.id;restoreCamera();}saved();
 }
@@ -237,19 +266,26 @@ function restoreCamera(){
   const saved=list?null:cameras.get(currentParent,board.clientWidth,board.clientHeight);
   camera=saved||{x:0,y:0,z:1};renderBoard();if(!saved)requestAnimationFrame(fit);
 }
+function cardCount(count){const m10=count%10,m100=count%100;return count+' '+(m10===1&&m100!==11?'карточка':m10>=2&&m10<=4&&(m100<12||m100>14)?'карточки':'карточек');}
+function boardHelp(){
+  if(list)return coarsePointer()?'Удержи карточку или нажми ⋯, чтобы открыть её меню. В режиме «Доска» карточки можно свободно раскладывать.':'Действия с карточкой — в меню ⋯. В режиме «Доска» карточки можно свободно раскладывать.';
+  return coarsePointer()?'Поле двигается одним пальцем, масштаб — двумя. Удержи карточку, чтобы передвинуть её. Размер и поворот — в меню ⋯.':'Тяни карточку мышью, поле — за свободное место или с пробелом. Ctrl + колесо меняет масштаб. Размер и поворот — в меню ⋯.';
+}
 function fit(){
   if(list||board.hidden)return;
   const b=boundsOf(store.children(currentParent)),w=board.clientWidth,h=board.clientHeight;
-  const toolbarBottom=$('.workspace-dock').getBoundingClientRect().bottom-board.getBoundingClientRect().top;
-  const top=Math.min(toolbarBottom+12,h/3),bottom=24;
-  camera.z=clamp(Math.min((w-90)/(b.right-b.left),(h-top-bottom)/(b.bottom-b.top),1),.2,2);
+  // The dock sits at the top on wide screens and at the bottom on phones: keep cards clear of it.
+  const area=board.getBoundingClientRect(),dock=$('.workspace-dock').getBoundingClientRect(),low=dock.top>area.top+h/2;
+  const crumbs=$('#breadcrumbs').hidden?0:$('#breadcrumbs').getBoundingClientRect().bottom-area.top;
+  const top=Math.min(Math.max(low?0:dock.bottom-area.top,crumbs)+12,h/3),bottom=low?Math.min(area.bottom-dock.top+12,h/3):24;
+  camera.z=clamp(Math.min((w-(w<700?24:90))/(b.right-b.left),(h-top-bottom)/(b.bottom-b.top),1),.2,2);
   camera.x=w/2-(b.left+b.right)/2*camera.z;
   camera.y=(top+h-bottom)/2-(b.top+b.bottom)/2*camera.z;
   paintCamera();rememberCamera();
 }
 function zoom(factor,x=board.clientWidth/2,y=board.clientHeight/2){const z=clamp(camera.z*factor,.2,2),wx=(x-camera.x)/camera.z,wy=(y-camera.y)/camera.z;camera={z,x:x-wx*z,y:y-wy*z};paintCamera();rememberCamera();}
 function point(event){const r=board.getBoundingClientRect();return {x:(event.clientX-r.left-camera.x)/camera.z,y:(event.clientY-r.top-camera.y)/camera.z};}
-function addType(type){$('#board-options').close();const onScreen=route.kind==='widget',parent=onScreen?(store.get(route.id)?.parentId??null):currentParent;const pos=list||onScreen?undefined:{x:(board.clientWidth/2-camera.x)/camera.z,y:(board.clientHeight/2-camera.y)/camera.z};const id=attempt(()=>store.add(type,parent,pos));if(!id)return;selected=id;$('#catalog').close();if(onScreen)go(parent);else renderBoard();status('Виджет добавлен. Действия — через ⋯ на карточке.');}
+function addType(type){$('#board-options').close();const onScreen=route.kind==='widget',parent=onScreen?(store.get(route.id)?.parentId??null):currentParent;const pos=list||onScreen?undefined:{x:(board.clientWidth/2-camera.x)/camera.z,y:(board.clientHeight/2-camera.y)/camera.z};const id=attempt(()=>store.add(type,parent,pos));if(!id)return;selected=id;$('#catalog').close();if(onScreen)go(parent);else renderBoard();if(list)requestAnimationFrame(()=>all('.widget').find(frame=>frame.dataset.id===id)?.scrollIntoView({block:'center',behavior:'smooth'}));status('Карточка добавлена.');}
 $('#catalog-grid').replaceChildren(...registry.list().map(def=>
   el('button',{class:'catalog-item tone-'+def.tone,onClick:()=>addType(def.type)},
     symbol(def.icon),el('strong',{},def.catalogTitle||def.title),el('p',{},def.description))));
@@ -259,6 +295,7 @@ $('#pin-settings').onclick=()=>requirePin('Изменить PIN',()=>status('PIN
 $('#pin-lock-all').onclick=$('#detail-lock').onclick=()=>lockCards();
 $('#detail-lock').replaceChildren(icon('lock'));
 function updateFullscreen(){const active=!!document.fullscreenElement;$('#fullscreen').setAttribute('aria-pressed',String(active));$('#fullscreen').setAttribute('aria-label',active?'Выйти из полноэкранного режима':'На весь экран');$('#fullscreen').title=active?'Выйти из полноэкранного режима (Esc)':'На весь экран';$('#fullscreen').replaceChildren(icon(active?'collapse':'expand'));}
+$('#fullscreen').hidden=!document.documentElement.requestFullscreen||coarsePointer()||matchMedia('(display-mode: standalone)').matches;
 $('#fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen();else status('Полноэкранный режим недоступен в этом браузере. На компьютере можно использовать F11.');}catch{status('Браузер не разрешил полноэкранный режим. Открой кабинет в отдельном браузере или используй F11.');}updateFullscreen();};
 document.addEventListener('fullscreenchange',updateFullscreen);
 let lastBoardSize;
@@ -266,16 +303,26 @@ new ResizeObserver(()=>{if(board.hidden||list){lastBoardSize=null;return;}const 
 all('[data-close]').forEach(button=>button.onclick=()=>button.closest('dialog').close());
 all('dialog').forEach(dialog=>dialog.addEventListener('click',event=>{if(event.target===dialog){const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dialog.close();}}));
 $('#view-canvas').onclick=()=>{list=false;$('#board-options').close();restoreCamera();};$('#view-list').onclick=()=>{list=true;$('#board-options').close();renderBoard();};
-$('#zoom-in').onclick=()=>zoom(1.2);$('#zoom-out').onclick=()=>zoom(1/1.2);$('#fit').onclick=()=>{fit();$('#board-options').close();};$('#pan-mode').onclick=()=>{hand=!hand;$('#pan-mode').setAttribute('aria-pressed',String(hand));$('#board-options').close();paintCamera();};
-$('#undo').onclick=()=>{attempt(()=>store.undo());if(selected&&!store.get(selected)){selected=null;inspect();}status('Последнее изменение отменено.');};
+$('#zoom-in').onclick=()=>zoom(1.2);$('#zoom-out').onclick=()=>zoom(1/1.2);$('#fit').onclick=()=>{fit();$('#board-options').close();};$('#dock-fit').onclick=fit;$('#pan-mode').hidden=coarsePointer();$('#pan-mode').onclick=()=>{hand=!hand;$('#pan-mode').setAttribute('aria-pressed',String(hand));$('#board-options').close();paintCamera();};
+$('#undo').onclick=()=>{attempt(()=>store.undo());if(selected&&!store.get(selected)){selected=null;inspect();}$('#board-options').close();status('Последнее изменение отменено.');};
 $('#close-inspector').onclick=finishEditing;
 $('#item-title').onchange=e=>attempt(()=>store.update(selected,{title:e.target.value}));
 for(const [id,key] of [['item-width','w'],['item-height','h'],['item-angle','rotation']])$('#'+id).onchange=e=>{const node=store.get(selected),value=e.target.valueAsNumber;if(!node||!Number.isFinite(value)){inspect();return;}const min=registry.get(node.type)?.minSize||{w:220,h:170};attempt(()=>store.update(selected,{layout:{[key]:key==='rotation'?normalizeAngle(value):clamp(value,min[key],1600)}}));};
 $('#duplicate').onclick=()=>{selected=attempt(()=>store.duplicate(selected));renderBoard();};$('#front').onclick=()=>attempt(()=>store.front(selected));
 function confirm(title,text,label,operation){$('#confirm-title').textContent=title;$('#confirm-text').textContent=text;$('#confirm-action').textContent=label;confirmAction=operation;$('#confirm-dialog').showModal();}
 $('#confirm-action').onclick=()=>{const operation=confirmAction;$('#confirm-dialog').close();attempt(operation);};
-$('#delete').onclick=()=>{const node=store.get(selected);if(!node)return;const id=node.id;confirm('Удалить «'+node.title+'»?',node.type==='folder'?'Виджеты внутри останутся: они переместятся на родительскую доску. Действие можно отменить.':'Содержимое можно вернуть кнопкой отмены, пока эта вкладка открыта.','Удалить',()=>{store.remove(id);selected=null;renderBoard();status('Удалено. Можно отменить.');});};
-$('#move').onclick=()=>{const node=store.get(selected);if(!node)return;const holder=$('#move-destinations');holder.replaceChildren();const destinations=[{id:null,title:'Моя доска'},...store.state.nodes.filter(n=>n.type==='folder'&&!lockFor(n.id)&&store.canMove(node.id,n.id))];for(const dest of destinations){const button=action((dest.id?'▱  ':'▦  ')+(dest.id?store.ancestors(dest.id).map(n=>n.title).join(' / '):dest.title),()=>{const id=node.id;attempt(()=>store.move(id,dest.id));$('#move-dialog').close();selected=null;renderBoard();status('Виджет перемещён.');},'destination');button.disabled=dest.id===node.parentId;holder.append(button);}$('#move-dialog').showModal();};
+// Like every other delete in the app: at once, with «Отменить» in the snackbar.
+$('#delete').onclick=()=>{
+  const node=store.get(selected);if(!node)return;
+  const inside=node.type==='folder'&&store.children(node.id).length;
+  if(!attempt(()=>{store.remove(node.id);return true;}))return;
+  const mark=store.history.at(-1);selected=null;finishEditing();renderBoard();
+  status('«'+node.title+'» — удалено.'+(inside?' Карточки из папки остались на доске.':''),{label:'Отменить',run:()=>{
+    if(store.history.at(-1)!==mark){status('После удаления были другие изменения. Отмена по шагам — в меню.');return;}
+    store.undo();
+  }});
+};
+$('#move').onclick=()=>{const node=store.get(selected);if(!node)return;const holder=$('#move-destinations');holder.replaceChildren();const destinations=[{id:null,title:'Моя доска'},...store.state.nodes.filter(n=>n.type==='folder'&&!lockFor(n.id)&&store.canMove(node.id,n.id))];for(const dest of destinations){const button=action(dest.id?store.ancestors(dest.id).map(n=>n.title).join(' / '):dest.title,()=>{const id=node.id;attempt(()=>store.move(id,dest.id));$('#move-dialog').close();selected=null;renderBoard();status('Карточка перемещена: '+dest.title+'.');},'destination');button.disabled=dest.id===node.parentId;holder.append(button);}$('#move-dialog').showModal();};
 $('#back').onclick=()=>{const locked=lockFor(route.id);go((locked||store.get(route.id))?.parentId??null);};
 function exportBoard(){
   let content=store.export();if(store.readOnly){try{content=storage.getItem(KEY)||content;}catch{}}
@@ -287,6 +334,20 @@ $('#export').onclick=()=>attempt(()=>{
   else exportBoard();
 });
 $('#import').onclick=()=>$('#import-file').click();$('#import-file').onchange=async event=>{const file=event.target.files[0];event.target.value='';if(!file)return;if(file.size>5*1024*1024){status('Файл слишком большой. Максимум — 5 МБ.');return;}try{const data=JSON.parse(await file.text());confirm('Заменить текущую доску?', 'Перед импортом можно закрыть это окно и экспортировать текущую доску. Замена доступна для отмены в этой вкладке.','Импортировать',()=>{disposeScreen();unlocked.clear();store.import(data);selected=null;history.replaceState(null,'','#/board');navigate();fit();status('Доска импортирована.');});}catch(error){status('Не удалось прочитать файл: '+error.message);}};
+// Two fingers on the board: pinch to zoom and move the field at the same time.
+const touches=new Map();let pinch=null;
+function pinchFrame(){const [a,b]=[touches.get(pinch.a),touches.get(pinch.b)],r=board.getBoundingClientRect();return {d:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),x:(a.x+b.x)/2-r.left,y:(a.y+b.y)/2-r.top};}
+function endPinch(){if(!pinch)return;pinch=null;board.classList.remove('panning','dragging');suppressClickUntil=performance.now()+400;rememberCamera();}
+board.addEventListener('pointerdown',event=>{
+  if(event.pointerType!=='touch')return;
+  touches.set(event.pointerId,{x:event.clientX,y:event.clientY});
+  if(list||pinch||touches.size!==2||drag)return;
+  pendingMouseDrag=null;hold.cancel();widgetMenu.close();
+  const [a,b]=[...touches.keys()];pinch={a,b};pinch.start=pinchFrame();pinch.camera={...camera};
+  board.classList.add('panning','dragging');event.preventDefault();
+},true);
+function releaseTouch(event){if(!touches.delete(event.pointerId))return;if(pinch&&(event.pointerId===pinch.a||event.pointerId===pinch.b))endPinch();}
+document.addEventListener('pointerup',releaseTouch,true);document.addEventListener('pointercancel',releaseTouch,true);
 board.addEventListener('pointerdown',event=>{
   if(!event.isPrimary){hold.cancel();return;}
   suppressClickUntil=0;
@@ -296,7 +357,7 @@ board.addEventListener('pointerdown',event=>{
   if(event.button!==0||event.pointerType==='mouse'||hand||space||editingId===frame.dataset.id||lockFor(frame.dataset.id)||event.target.closest(dragExclusions+',.transform-handle'))return;
   hold.start(event.pointerId,event.clientX,event.clientY,frame.dataset.id);
 },true);
-document.addEventListener('pointerdown',event=>{if(!event.isPrimary){pendingMouseDrag=null;hold.cancel();if(drag)endDrag({pointerId:drag.pointer},true);}},true);
+document.addEventListener('pointerdown',event=>{if(!event.isPrimary){pendingMouseDrag=null;hold.cancel();if(drag)endDrag({pointerId:drag.pointer},drag.kind!=='pan');}},true);
 document.addEventListener('pointerup',event=>{
   if(pendingMouseDrag?.pointerId===event.pointerId)pendingMouseDrag=null;
   if(hold.end(event.pointerId))suppressClickUntil=performance.now()+600;
@@ -335,6 +396,13 @@ board.addEventListener('pointerdown',event=>{
   hold.cancel();event.preventDefault();
 });
 document.addEventListener('pointermove',event=>{
+  const touch=touches.get(event.pointerId);
+  if(touch){touch.x=event.clientX;touch.y=event.clientY;}
+  if(pinch){
+    if(event.pointerId!==pinch.a&&event.pointerId!==pinch.b)return;
+    const now=pinchFrame(),from=pinch.start,c=pinch.camera,z=clamp(c.z*now.d/from.d,.2,2);
+    camera={z,x:now.x-(from.x-c.x)/c.z*z,y:now.y-(from.y-c.y)/c.z*z};paintCamera();return;
+  }
   hold.move(event.pointerId,event.clientX,event.clientY);
   const pending=pendingMouseDrag;
   if(pending?.pointerId===event.pointerId){
@@ -362,7 +430,7 @@ function endDrag(event,cancel=false){
   if(!cancel&&changed){
     if(d.target){
       const moved=attempt(()=>{store.move(d.id,d.target);return true;});
-      if(moved){selected=null;status('Виджет перемещён в папку.');}
+      if(moved){selected=null;status('Карточка перемещена в папку.');}
     }else attempt(()=>store.update(d.id,{layout:d.preview}));
   }
   // A saved layout re-renders through the store subscription. A cancelled or
@@ -383,11 +451,12 @@ document.addEventListener('keydown',event=>{
   if(event.key==='Escape'&&!document.querySelector('dialog[open]')){pendingMouseDrag=null;hold.cancel();if(editingId){event.preventDefault();if(drag)endDrag({pointerId:drag.pointer},true);finishEditing();return;}}
   if(event.target.matches('input,textarea,select')||document.querySelector('dialog[open]'))return;
   if(event.code==='Space'&&route.kind==='board'&&!list&&!event.target.closest('button,a')){event.preventDefault();space=true;paintCamera();}
-  if(event.key==='Escape'){if(drag)endDrag({pointerId:drag.pointer},true);selected=null;hand=false;space=false;inspect();highlight();paintCamera();}
+  if(event.key==='Escape'&&route.kind==='widget'){event.preventDefault();$('#back').click();return;}
+  if(event.key==='Escape'){if(drag)endDrag({pointerId:drag.pointer},true);selected=null;hand=false;space=false;$('#pan-mode').setAttribute('aria-pressed','false');inspect();highlight();paintCamera();}
   if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='z'&&route.kind==='board'){event.preventDefault();store.undo();}
   const frame=event.target.closest('.widget');if(list||!frame||editingId!==frame.dataset.id||!event.key.startsWith('Arrow'))return;event.preventDefault();const node=store.get(frame.dataset.id),step=event.shiftKey?10:1,dx=event.key==='ArrowRight'?step:event.key==='ArrowLeft'?-step:0,dy=event.key==='ArrowDown'?step:event.key==='ArrowUp'?-step:0;selected=node.id;const cls=event.target.className;const patch=event.target.dataset.rotate!==undefined?{rotation:normalizeAngle(node.layout.rotation+(dx||-dy))}:event.target.dataset.corner?{w:clamp(node.layout.w+dx,registry.get(node.type)?.minSize.w||220,1600),h:clamp(node.layout.h+dy,registry.get(node.type)?.minSize.h||170,1600)}:{x:node.layout.x+dx,y:node.layout.y+dy};attempt(()=>store.update(node.id,{layout:patch}));const matching=all('.widget').find(n=>n.dataset.id===node.id);matching?.querySelector(cls.includes('rotate-handle')?'.rotate-handle':cls.includes('resize-handle')?'.resize-handle':'[data-drag]')?.focus({preventScroll:true});
 });
-document.addEventListener('keyup',event=>{if(event.code==='Space'){space=false;paintCamera();}});window.addEventListener('blur',()=>{pendingMouseDrag=null;hold.cancel();space=false;if(drag)endDrag({pointerId:drag.pointer},true);paintCamera();});
+document.addEventListener('keyup',event=>{if(event.code==='Space'){space=false;paintCamera();}});window.addEventListener('blur',()=>{touches.clear();endPinch();pendingMouseDrag=null;hold.cancel();space=false;if(drag)endDrag({pointerId:drag.pointer},true);paintCamera();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){pendingMouseDrag=null;hold.cancel();}});
 function protectedIds(raw){
   let nodes;
