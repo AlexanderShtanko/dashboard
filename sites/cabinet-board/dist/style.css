@@ -1112,3 +1112,112 @@ input:focus,textarea:focus,select:focus{background:#fffdf9;box-shadow:var(--well
 /* Snackbar sits at the bottom, away from titles and the dock. */
 .toast{top:auto;bottom:max(24px,calc(env(safe-area-inset-bottom) + 16px));transform:translateY(10px);}
 .toast.visible{transform:translateY(0);}
+
+/* ───────── Controls: board menu, card menu, dock (all screens) ───────── */
+.workspace-dock #dock-fit svg{width:21px;height:21px;}
+.detail-header #back{display:inline-flex;align-items:center;gap:4px;max-width:100%;min-height:40px;padding:7px 15px 7px 8px;}
+.detail-header #back svg{width:18px;height:18px;flex-shrink:0;}
+.detail-header #back span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.widget-menu-divider{border:0;height:1px;margin:4px 8px;background:#4a3c281f;box-shadow:0 1px 0 #ffffffb3;}
+.widget-menu-item.danger{margin-top:4px;}
+.board-menu .modal-heading{margin-bottom:6px;align-items:center;}
+.board-menu .modal-heading h2{margin:0;}
+.menu-section{padding:12px 0 8px;border-top:1px solid #4a3c281f;box-shadow:inset 0 1px 0 #ffffffb3;}
+.menu-section:first-of-type{border-top:0;box-shadow:none;padding-top:4px;}
+.menu-section h3{margin:0 12px 6px;font-size:11px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);}
+.menu-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:2px 12px 2px 8px;}
+.menu-item,#board-options .nav-button{display:flex;align-items:center;gap:12px;width:100%;min-height:42px;padding:9px 12px;border-radius:12px;font-size:13.5px;line-height:1.3;text-align:left;color:var(--text);white-space:normal;overflow-wrap:anywhere;}
+.menu-item:hover:not(:disabled),.menu-item:focus-visible{background:linear-gradient(180deg,#eee8dc,#f3eee5);box-shadow:inset 0 1px 1px #3c301e14;}
+.menu-item:disabled{opacity:.45;}
+.menu-item-icon{display:grid;place-items:center;flex-shrink:0;width:20px;height:20px;color:var(--muted);}
+.menu-item-icon svg{width:18px;height:18px;}
+#board-options .nav-button.active{font-weight:600;}
+#board-options .nav-button.active .menu-item-icon,#board-options .nav-button.new-folder,#board-options .nav-button.new-folder .menu-item-icon{color:var(--green);}
+#board-options #navigation{display:grid;gap:2px;}
+#board-options .pin-actions,#board-options .cloud-actions:not([hidden]),#board-options .file-actions{display:grid;gap:2px;margin:0;padding:0;border:0;box-shadow:none;}
+#board-options .save-status{display:block;margin:2px 12px 8px;font-size:12px;}
+#board-options .canvas-controls{display:flex;align-items:center;justify-content:flex-start;gap:10px;margin:10px 8px 0;padding:0;border:0;background:none;box-shadow:none;}
+.zoom-stepper{display:flex;align-items:center;gap:2px;padding:3px;border-radius:14px;background:#4a3c2812;box-shadow:inset 0 1px 3px #3c301e29,0 1px 0 #ffffffb3;}
+.zoom-stepper .icon-button{width:36px;height:36px;min-height:36px;border-radius:11px;background:var(--key);box-shadow:var(--key-shadow);}
+.zoom-stepper .icon-button:active{box-shadow:var(--key-pressed);}
+.zoom-stepper output{min-width:52px;text-align:center;font-size:13px;font-variant-numeric:tabular-nums;}
+#board-options #fit{padding:9px 14px;}
+#board-options #pan-mode{margin-left:auto;width:40px;height:40px;border-radius:12px;background:var(--key);box-shadow:var(--key-shadow);}
+#board-options #pan-mode[aria-pressed=true]{box-shadow:var(--key-pressed);color:var(--green);}
+#board-options .modal-footnote{margin:10px 12px 8px;}
+#move-destinations{display:grid;gap:2px;}
+#move-destinations .destination{min-height:44px;}
+
+/* ───────── Touch: finger-sized targets, no zoom on focus ───────── */
+@media(pointer:coarse){
+  /* iOS zooms the page when a focused field has text smaller than 16px. */
+  input:not([type=color]):not([type=checkbox]):not([type=radio]),textarea,select{font-size:16px!important;}
+  .widget-options,.card-edit-done{min-width:44px;min-height:44px;}
+  .item-more,.link-more{opacity:.75;}
+  .item-more{width:40px;height:40px;margin:-6px -6px -6px 0;}
+  .item-more svg{width:18px;height:18px;}
+  .menu-item,#board-options .nav-button,#move-destinations .destination{min-height:48px;font-size:15px;}
+  .zoom-stepper .icon-button{width:44px;height:44px;min-height:44px;}
+  .modal-heading>.icon-button{width:44px;height:44px;}
+  .toast-action{min-height:40px;padding:8px 14px;font-size:14px;}
+  .toast{font-size:14px;}
+  .view-switch button{min-height:40px;padding:8px 16px;font-size:14px;}
+  .add-row-button,.add-row-form{min-height:44px;}
+  .editing .transform-handle{width:48px;height:48px;}
+  /* Small marks keep their look and get a finger-sized invisible hit area. */
+  .task-check{position:relative;width:24px;height:24px;margin:1px 2px 0;}
+  .task-check::after,.link-more::after{content:'';position:absolute;inset:-10px;}
+  .daily-week-nav .icon-button,.daily-month-controls .icon-button{width:44px;height:44px;min-height:44px;}
+  .focus-custom{min-height:40px;}
+  .task-item{min-height:44px;}
+  /* A long press opens the card menu, it must not select text. */
+  .list-view .widget{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
+  .list-view .widget :is(input,textarea,[contenteditable]){-webkit-user-select:text;user-select:text;}
+}
+
+/* ───────── Phone: thumb-reach dock, bottom sheets ───────── */
+@keyframes sheet-up{from{translate:0 24px;opacity:0;}to{translate:0 0;opacity:1;}}
+@media(max-width:600px){
+  .workspace-dock{top:auto;right:auto;left:50%;translate:-50% 0;bottom:max(14px,calc(env(safe-area-inset-bottom) + 8px));gap:10px;padding:8px 12px;border-radius:26px;}
+  .workspace-dock .icon-button{width:50px;height:50px;min-height:50px;border-radius:18px;}
+  .workspace-dock .icon-button.dock-add{width:60px;}
+  .floating-breadcrumbs{flex-wrap:nowrap;max-width:calc(100vw - 28px);left:max(14px,env(safe-area-inset-left));overflow-x:auto;scrollbar-width:none;}
+  .floating-breadcrumbs .crumb{flex-shrink:0;max-width:60vw;min-height:36px;}
+  .board.list-view{padding:max(16px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) calc(104px + env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));}
+  body:has(#breadcrumbs:not([hidden])) .board.list-view{padding-top:calc(max(16px,env(safe-area-inset-top)) + 58px);}
+  .board.list-view .world{gap:14px;}
+  .board.list-view .widget{max-height:none;}
+  .board-empty{padding-bottom:120px;}
+  body.detail-mode .main{padding:max(14px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));}
+  .detail-header{position:sticky;top:0;z-index:5;margin:0 0 12px;padding:4px 0 10px;background:linear-gradient(var(--bg) 78%,transparent);}
+  body.detail-mode .main{overflow-x:hidden;}
+  .detail-header h1{font-size:24px;}
+  .detail-content{padding:16px 14px;border-radius:20px;}
+  .toast{left:12px;right:12px;max-width:none;translate:none;bottom:calc(max(14px,env(safe-area-inset-bottom) + 8px) + 78px);}
+  body.detail-mode .toast{bottom:max(16px,calc(env(safe-area-inset-bottom) + 12px));}
+  .toast.has-action{padding:8px 8px 8px 16px;}
+
+  /* Menus come up from the bottom, where the thumb is. */
+  .widget-menu{left:8px!important;right:8px;top:auto!important;bottom:max(8px,env(safe-area-inset-bottom));width:auto;max-width:none;max-height:78dvh;padding:8px;border-radius:24px;animation:sheet-up .22s var(--ease);}
+  .widget-menu-title{font-size:13px;padding:10px 14px 12px;}
+  .widget-menu-item{min-height:50px;gap:14px;padding:10px 14px;font-size:15.5px;border-radius:14px;}
+  .widget-menu-item svg{width:21px;height:21px;}
+  body:has(>.widget-menu:not([hidden]))::after{content:'';position:fixed;inset:0;z-index:3990;background:#2d261c52;}
+  body:has(>.widget-menu:not([hidden])) .toast{opacity:0;pointer-events:none;}
+
+  .modal{width:100%;max-width:none;max-height:88dvh;margin:auto 0 0;padding:18px 14px calc(18px + env(safe-area-inset-bottom));border-radius:26px 26px 0 0;overscroll-behavior:contain;}
+  .modal[open]{animation:sheet-up .24s var(--ease);}
+  .modal h2{font-size:21px;}
+  .modal-heading{margin-bottom:14px;}
+  /* Forms stay near the top, so the keyboard does not cover the fields. */
+  .modal.item-dialog,.modal.link-dialog,#pin-dialog,#confirm-dialog{width:calc(100% - 20px);margin:max(12px,env(safe-area-inset-top)) auto auto;padding:20px 16px;border-radius:24px;}
+  .modal-actions{flex-wrap:wrap;gap:8px;}
+  .modal-actions .button{flex:1 1 auto;min-height:46px;}
+  .modal-actions .item-dialog-remove,.modal-actions .link-dialog-remove{flex-basis:100%;order:3;margin:0;}
+  .catalog-grid{grid-template-columns:minmax(0,1fr);gap:10px;}
+  .inspector{left:8px;right:8px;width:auto;max-width:none;bottom:calc(max(14px,env(safe-area-inset-bottom) + 8px) + 78px);}
+}
+@media(prefers-reduced-motion:reduce){.widget-menu,.modal[open]{animation:none;}}
+.list-view .note-inline,.detail-content .note-editor{field-sizing:content;}
+.list-view .note-inline{min-height:4.8em;max-height:60vh;height:auto;flex:none;}
+.list-view .widget[data-type=note]{max-height:none;}

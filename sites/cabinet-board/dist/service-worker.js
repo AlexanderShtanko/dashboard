@@ -1,7 +1,7 @@
 // Offline support for the web version (PWA). Not used by the Chrome extension.
 // Same-origin files: served from cache at once and refreshed in the background,
 // so a new version appears on the next launch. Google and currency requests are never cached.
-const CACHE = 'cabinet-v1';
+const CACHE = 'cabinet-v2';
 const SHELL = ['./', './index.html', './style.css', './app.js', './manifest.webmanifest', './icons/icon-192.png'];
 
 self.addEventListener('install', event => {

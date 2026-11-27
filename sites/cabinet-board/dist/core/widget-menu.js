@@ -1,5 +1,6 @@
 import {icon} from './icons.js';
 import {el} from './dom.js';
+import {swallowTap} from './ui.js';
 
 /** Body-level menu: canvas zoom, rotation and clipping must not affect it. */
 export function createWidgetMenu(onAction){
@@ -15,27 +16,35 @@ export function createWidgetMenu(onAction){
     previous?.setAttribute('aria-expanded','false');
     if(restoreFocus&&previous?.isConnected)previous.focus({preventScroll:true});
   }
-  function show(button,node,canOpen){
+  function show(button,node,{canOpen=false,list=false,first=false,last=false}={}){
     if(anchor===button&&!menu.hidden){close(true);return;}
     close();anchor=button;
     button.setAttribute('aria-expanded','true');
     menu.setAttribute('aria-label','Действия: '+node.title);
+    // Order: open, change the card, arrange it, protect it, delete it.
     const entries=[
-      ...(canOpen?[['open',node.type==='folder'?'Открыть папку':'Открыть виджет','↗']]:[]),
-      ['settings','Редактировать карточку','✎'],
+      canOpen?['open',node.type==='folder'?'Открыть папку':'Открыть','open']:null,
+      ['rename','Переименовать','edit'],
+      list?null:['settings','Размер и поворот','sliders'],
+      ['duplicate','Дублировать','duplicate'],
+      '-',
+      ['move','Переместить в папку…','folder'],
+      list&&!first?['up','Выше в списке','arrow-up']:null,
+      list&&!last?['down','Ниже в списке','arrow-down']:null,
+      list?null:['front','На передний план','front'],
+      '-',
       ...(node.pinProtected?[
-        ['lock','Заблокировать карточку'],
-        ['unprotect','Снять защиту PIN']
-      ]:[['protect','Защитить PIN-кодом']]),
-      ['move','Переместить в папку…','▱'],
-      ['duplicate','Дублировать','⧉'],
-      ['front','На передний план','↑'],
-      ['delete','Удалить','×']
-    ];
-    menu.replaceChildren(el('div',{class:'widget-menu-title',role:'presentation'},node.title),...entries.map(([action,label])=>el('button',{
-      type:'button',role:'menuitem',class:'widget-menu-item'+(action==='delete'?' danger':''),
-      onClick:()=>{close();onAction(action,node.id);}
-    },el('span',{'aria-hidden':'true'},icon(({open:'expand',settings:'note',lock:'lock',protect:'lock',unprotect:'lock',move:'folder',duplicate:'duplicate',front:'front',delete:'close'})[action])),label)));
+        ['lock','Заблокировать','lock'],
+        ['unprotect','Снять защиту PIN','lock']
+      ]:[['protect','Защитить PIN-кодом','lock']]),
+      ['delete','Удалить','trash']
+    ].filter(Boolean);
+    menu.replaceChildren(el('div',{class:'widget-menu-title',role:'presentation'},node.title),...entries.map(entry=>{
+      if(entry==='-')return el('hr',{class:'widget-menu-divider'});
+      const [action,label,glyph]=entry;
+      return el('button',{type:'button',role:'menuitem',class:'widget-menu-item'+(action==='delete'?' danger':''),
+        onClick:()=>{close();onAction(action,node.id);}},el('span',{'aria-hidden':'true'},icon(glyph)),label);
+    }));
     menu.hidden=false;
     const rect=button.getBoundingClientRect(),gap=8,padding=10;
     const width=menu.offsetWidth,height=menu.offsetHeight;
@@ -53,7 +62,7 @@ export function createWidgetMenu(onAction){
     const next=event.key==='Home'?0:event.key==='End'?items.length-1:(index+(event.key==='ArrowDown'?1:-1)+items.length)%items.length;
     items[next].focus();
   });
-  document.addEventListener('pointerdown',event=>{if(!menu.hidden&&!menu.contains(event.target)&&!anchor?.contains(event.target))close();},true);
+  document.addEventListener('pointerdown',event=>{if(!menu.hidden&&!menu.contains(event.target)&&!anchor?.contains(event.target)){swallowTap(event);close();}},true);
   document.addEventListener('scroll',event=>{if(!menu.hidden&&!menu.contains(event.target))close();},true);
   window.addEventListener('resize',()=>close());
   return {show,close};

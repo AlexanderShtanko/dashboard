@@ -12,7 +12,13 @@ function editor(ctx,{screen=false}={}){
     saved=input.value;
     ctx.update({body:input.value},{render:false,silent:true});
   };
-  input.addEventListener('input',()=>{clearTimeout(debounce);debounce=setTimeout(save,400);});
+  // In the list view and on the screen the note is as tall as its text (CSS field-sizing where supported).
+  const grow=()=>{
+    if(globalThis.CSS?.supports?.('field-sizing','content')||!input.closest('.list-view,.detail-content'))return;
+    input.style.height='auto';input.style.height=input.scrollHeight+2+'px';
+  };
+  requestAnimationFrame(grow);
+  input.addEventListener('input',()=>{grow();clearTimeout(debounce);debounce=setTimeout(save,400);});
   input.addEventListener('blur',save);
   input.addEventListener('keydown',event=>{if(event.key==='Escape'&&!screen){event.preventDefault();save();input.blur();}});
   return {element:input,dispose:save};

@@ -1,5 +1,6 @@
 import {el,safeUrl} from '../core/dom.js';
 import {icon} from '../core/icons.js';
+import {swallowTap} from '../core/ui.js';
 import {MAX_LINKS,normalizeUrl,hostOf,displayTitle,avatarLetter,avatarColor,moveItem,faviconUrl} from './links-data.js';
 
 // Shortcuts in the spirit of Chrome's new tab page: round tiles with favicons,
@@ -84,10 +85,10 @@ function shortcuts(ctx,{screen=false}={}){
     const item=items()[index];if(!item)return;
     const last=items().length-1;
     const entries=[
-      ['Изменить',icon('note'),()=>openDialog(index)],
-      ...(coarsePointer()&&index>0?[['Сдвинуть левее','←',()=>reorder(index,index-1)]]:[]),
-      ...(coarsePointer()&&index<last?[['Сдвинуть правее','→',()=>reorder(index,index+1)]]:[]),
-      ['Удалить',icon('close'),()=>remove(index),true],
+      ['Изменить',icon('edit'),()=>openDialog(index)],
+      ...(coarsePointer()&&index>0?[['Сдвинуть левее',icon('chevron-left'),()=>reorder(index,index-1)]]:[]),
+      ...(coarsePointer()&&index<last?[['Сдвинуть правее',icon('chevron-right'),()=>reorder(index,index+1)]]:[]),
+      ['Удалить',icon('trash'),()=>remove(index),true],
     ];
     menu=el('div',{class:'widget-menu link-menu',role:'menu','aria-label':'Ярлык: '+displayTitle(item)},
       el('div',{class:'widget-menu-title',role:'presentation'},displayTitle(item)),
@@ -100,7 +101,7 @@ function shortcuts(ctx,{screen=false}={}){
     menu.style.left=Math.max(pad,Math.min(rect.right-box.width,innerWidth-box.width-pad))+'px';
     menu.style.top=top+'px';
     const buttons=[...menu.querySelectorAll('button')];buttons[0]?.focus({preventScroll:true});
-    const outside=event=>{if(!menu?.contains(event.target)&&event.target!==anchor)closeMenu();};
+    const outside=event=>{if(!menu?.contains(event.target)&&event.target!==anchor){swallowTap(event);closeMenu();}};
     const keys=event=>{
       if(event.key==='Escape'){event.preventDefault();event.stopPropagation();closeMenu(true);return;}
       if(event.key==='Tab'){closeMenu();return;}
@@ -223,7 +224,7 @@ export const links={type:'links',version:1,title:'Ярлыки',description:'Л�
   renderCard:ctx=>shortcuts(ctx),
   renderScreen(ctx){
     const view=shortcuts(ctx,{screen:true});
-    view.element.append(el('p',{class:'muted links-help'},'Перетащите ярлык мышью, чтобы изменить порядок. Наведите на ярлык и нажмите ⋯, чтобы изменить или удалить его. С клавиатуры: Alt + ← / →.'));
+    view.element.append(el('p',{class:'muted links-help'},coarsePointer()?'Удержите ярлык или нажмите ⋯, чтобы изменить, удалить или передвинуть его.':'Перетащите ярлык мышью, чтобы изменить порядок. Наведите на ярлык и нажмите ⋯, чтобы изменить или удалить его. С клавиатуры: Alt + ← / →.'));
     return view;
   }
 };

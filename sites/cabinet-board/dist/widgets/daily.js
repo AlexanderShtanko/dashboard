@@ -165,7 +165,7 @@ function historyView(api, chooseDay) {
       calendar.append(button);
     }
     const first = allDates.length ? allDates.reduce((earliest, date) => date < earliest ? date : earliest) : null;
-    root.replaceChildren(
+    root.replaceChildren(...[
       el('p', {class:'muted'}, first ? `Отметки с ${longDate(first)} · всего выполнений: ${allDates.length}` : 'Пока нет отметок.'),
       actions.length ? totals : null,
       el('div', {class:'daily-month-controls'},
@@ -173,7 +173,7 @@ function historyView(api, chooseDay) {
         el('strong', {class:'daily-month-label'}, capitalize(monthFormat.format(dayDate(month + '-01')).replace(/\s*г\.$/, ''))),
         el('button', {type:'button', class:'icon-button', 'aria-label':'Следующий месяц', disabled:month >= today.slice(0, 7), onClick:() => changeMonth(1)}, icon('chevron-right'))),
       calendar,
-      el('p', {class:'muted'}, 'Нажмите на день, чтобы открыть его неделю и поправить отметки.'));
+      el('p', {class:'muted'}, 'Нажмите на день, чтобы открыть его неделю и поправить отметки.')].filter(Boolean));
   }
   render();
   return {element:root, render};
@@ -201,10 +201,10 @@ export const daily = {
       const today = week.at(-1);
       const done = actions.filter(item => item.completed.includes(today)).length;
       const keepAdd = add.isOpen() && element.contains(document.activeElement);
-      element.replaceChildren(
+      element.replaceChildren(...[
         actions.length ? el('p', {class:'muted daily-today'}, `Сегодня ${done} из ${actions.length}`) : el('p', {class:'muted daily-today'}, 'Отмечайте, что сделали за день.'),
         actions.length ? grid(api, week).element : null,
-        actions.length < maxActions ? add.element : null);
+        actions.length < maxActions ? add.element : null].filter(Boolean));
       if (keepAdd) add.focus();
     }
     render();
@@ -246,10 +246,10 @@ export const daily = {
         end < today ? el('button', {type:'button', class:'button daily-today-button', onClick:() => {end = today;selected = null;render();}}, 'Сегодня') : null);
       const table = actions.length ? grid(api, week, {screen:true, selected}) : null;
       if (table) cleanup = sortable(table.body, {onDrop:order => api.save(order.map(i => api.actions()[i])), onCancel:render}).dispose;
-      root.replaceChildren(head, nav,
+      root.replaceChildren(...[head, nav,
         table ? table.element : el('p', {class:'muted daily-empty'}, 'Добавьте действие, которое хотите делать каждый день: прогулка, чтение, вода.'),
         actions.length < maxActions ? add.element : el('p', {class:'muted'}, `В одном виджете может быть до ${maxActions} действий.`),
-        actions.length ? el('p', {class:'muted daily-help'}, 'Нажмите на квадрат, чтобы отметить день. Перетащите строку мышью, чтобы поменять порядок.') : null);
+        actions.length ? el('p', {class:'muted daily-help'}, coarsePointer() ? 'Нажмите на квадрат, чтобы отметить день. Удержите строку или нажмите ⋯, чтобы изменить её или поменять порядок.' : 'Нажмите на квадрат, чтобы отметить день. Перетащите строку мышью, чтобы поменять порядок.') : null].filter(Boolean));
       if (keepAdd) add.focus();
     }
     render();
