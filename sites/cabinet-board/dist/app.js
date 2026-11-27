@@ -27,7 +27,7 @@ world.addEventListener('animationend',event=>{
   if(classes[event.animationName])event.target.classList.remove(classes[event.animationName]);
 });
 let selected=null,hand=false,space=false,drag=null,pendingMouseDrag=null,cardCleanup=[],screenCleanup=null;
-let list=matchMedia('(max-width:700px)').matches,camera={x:0,y:0,z:1},currentParent=null,route={kind:'board',id:null};
+let list=matchMedia('(max-width:700px)').matches,camera={x:0,y:0,z:1},currentParent=null,route={kind:'board',id:null},arrived=false,cameFrom=null;
 let confirmAction,hasNavigated=false,inspectorVisible=false,statusTimeout;
 let editingId=null,seenCards=new Set(),suppressClickUntil=0;
 const unlocked=new Set(),externalProtected=new Set();
@@ -213,15 +213,25 @@ function heading(){
   const node=route.id?store.get(route.id):null;
   const locked=lockFor(route.id);
   $('#page-title').textContent=locked?lockedTitle:route.kind==='widget'?node?.title||'':'';
-  const parent=store.get((locked||node)?.parentId),backLabel=parent&&!lockFor(parent.id)?parent.title:'Моя доска';
-  $('#back').replaceChildren(icon('chevron-left'),el('span',{},backLabel));$('#back').setAttribute('aria-label','Назад: '+backLabel);
+  const target=store.get(backTarget()),backLabel=target&&!lockFor(target.id)?target.title:'Моя доска';
+  $('#back').replaceChildren(icon('arrow-left'));$('#back').setAttribute('aria-label','Назад: '+backLabel);$('#back').title='Назад: '+backLabel;
+  // Path bar of a folder: an up arrow, then the path with chevrons; the last crumb is the folder itself.
   const crumbs=$('#breadcrumbs');
+  const up=el('button',{type:'button',class:'icon-button crumb-back','aria-label':'Назад',title:'Назад',onClick:()=>go(node?.parentId??null)},icon('arrow-left'));
   const root=action('Моя доска',()=>go(),'crumb');root.dataset.dest='';
-  crumbs.replaceChildren(root);
+  crumbs.replaceChildren(up,root);
   if(node&&!locked&&route.kind==='board')for(const ancestor of store.ancestors(node.id)){
-    const crumb=action(ancestor.title,()=>go(ancestor.id),'crumb');if(ancestor.id!==node.id)crumb.dataset.dest=ancestor.id;
-    crumbs.append(el('span',{'aria-hidden':'true'},'/'),crumb);
+    const crumb=action(ancestor.title,()=>go(ancestor.id),'crumb');if(ancestor.id!==node.id)crumb.dataset.dest=ancestor.id;else crumb.setAttribute('aria-current','page');
+    crumbs.append(el('span',{class:'crumb-sep','aria-hidden':'true'},icon('chevron-right')),crumb);
   }
+}
+// Back from a widget screen leads to the board it was opened from: a widget opened from a folder's
+// card on the main board returns to the main board, not into the folder.
+function backTarget(){
+  const locked=lockFor(route.id),parent=(locked||store.get(route.id))?.parentId??null;
+  if(route.kind!=='widget'||locked||!cameFrom)return parent;
+  if(cameFrom.id===null)return null;
+  const from=store.get(cameFrom.id);return from&&from.type==='folder'&&!lockFor(from.id)?from.id:parent;
 }
 function inspect(){const node=lockFor(selected)?null:store.get(selected);$('#inspector').hidden=!inspectorVisible||!node||board.hidden;$('#item-title').value=node?.title??'';if(!node)return;$('#item-width').value=Math.round(node.layout.w);$('#item-height').value=Math.round(node.layout.h);$('#item-angle').value=Math.round(node.layout.rotation);const min=registry.get(node.type)?.minSize||{w:220,h:170};$('#item-width').min=min.w;$('#item-height').min=min.h;}
 function paintCamera(){world.style.transform=list?'':`translate(${camera.x}px,${camera.y}px) scale(${camera.z})`;world.style.setProperty('--inverse',1/camera.z);board.style.backgroundSize=`${24*camera.z}px ${24*camera.z}px`;board.style.backgroundPosition=`${camera.x}px ${camera.y}px`;$('#zoom-value').textContent=Math.round(camera.z*100)+'%';board.classList.toggle('hand',hand||space);}
@@ -286,7 +296,8 @@ function renderScreen(){
 function navigate(){
   pendingMouseDrag=null;hold.cancel();widgetMenu.close();inspectorVisible=false;editingId=null;seenCards.clear();
   if(hasNavigated)rememberCamera();hasNavigated=true;
-  disposeScreen();disposeCards();$('#detail-content').replaceChildren();world.replaceChildren();route=parseRoute();selected=null;
+  disposeScreen();disposeCards();$('#detail-content').replaceChildren();world.replaceChildren();const previous=arrived?route:null;arrived=true;route=parseRoute();selected=null;
+  if(route.kind==='board')cameFrom=null;else if(previous?.kind==='board')cameFrom={id:previous.id};
   const node=route.id?store.get(route.id):null;if(route.id&&!node||route.kind==='board'&&node&&node.type!=='folder'){status('Эта папка или виджет больше не существует.');history.replaceState(null,'','#/board');route={kind:'board',id:null};}
   const detail=route.kind==='widget'||!!lockFor(route.id);document.body.classList.toggle('detail-mode',detail);$('#breadcrumbs').hidden=detail||!route.id;$('#board').hidden=detail;$('#detail').hidden=!detail;$('#board-toolbar').hidden=detail;$('#canvas-controls').hidden=detail||list;$('.workspace-dock').hidden=detail;
   heading();sidebar();inspect();updatePinControls();
@@ -360,7 +371,7 @@ $('#delete').onclick=()=>{
   }});
 };
 $('#move').onclick=()=>{const node=store.get(selected);if(!node)return;const holder=$('#move-destinations');holder.replaceChildren();const destinations=[{id:null,title:'Моя доска'},...store.state.nodes.filter(n=>n.type==='folder'&&!lockFor(n.id)&&store.canMove(node.id,n.id))];for(const dest of destinations){const button=action(dest.id?store.ancestors(dest.id).map(n=>n.title).join(' / '):dest.title,()=>{const id=node.id;attempt(()=>store.move(id,dest.id));$('#move-dialog').close();selected=null;renderBoard();status('Карточка перемещена: '+dest.title+'.');},'destination');button.disabled=dest.id===node.parentId;holder.append(button);}$('#move-dialog').showModal();};
-$('#back').onclick=()=>{const locked=lockFor(route.id);go((locked||store.get(route.id))?.parentId??null);};
+$('#back').onclick=()=>go(backTarget());
 function exportBoard(){
   let content=store.export();if(store.readOnly){try{content=storage.getItem(KEY)||content;}catch{}}
   const url=URL.createObjectURL(new Blob([content],{type:'application/json'})),a=el('a',{href:url,download:'cabinet-board-'+new Date().toISOString().slice(0,10)+'.json'});

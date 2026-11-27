@@ -22,7 +22,7 @@ const paths={
   trash:['M4 7h16','M10 11v6M14 11v6','M6 7l1 13h10l1-13','M9 7V4h6v3'],
   history:['M4 12a8 8 0 1 0 2.4-5.7','M4 4v4h4','M12 8v4l3 2'],
   sliders:['M4 7h9M17 7h3M4 17h3M11 17h9','M15 5v4M9 15v4'],
-  'chevron-left':['m15 6-6 6 6 6'],'chevron-right':['m9 6 6 6-6 6'],'chevron-down':['m6 9 6 6 6-6'],
+  'chevron-left':['m15 6-6 6 6 6'],'arrow-left':['M19 12H5m6-6-6 6 6 6'],'chevron-right':['m9 6 6 6-6 6'],'chevron-down':['m6 9 6 6 6-6'],
   'arrow-up':['M12 19V5m-6 6 6-6 6 6'],'arrow-down':['M12 5v14m-6-6 6 6 6-6'],
   open:['M14 4h6v6','M20 4 11 13','M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5'],
   fit:['M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4','M9 9h6v6H9Z'],
