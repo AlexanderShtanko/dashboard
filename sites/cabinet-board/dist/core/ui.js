@@ -145,6 +145,8 @@ export function addRow({label,placeholder,maxlength=200,onAdd,className=''}){
       if(!text){hide(true);return;}
       input.value='';
       onAdd(text);
+      // On a phone the keyboard goes away after each item, so the list is visible again.
+      if(coarsePointer())hide();
     }},el('span',{class:'add-row-icon','aria-hidden':'true'},icon('plus')),input);
     input.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();hide(true);}});
     input.addEventListener('blur',()=>setTimeout(()=>{if(open&&!input.value.trim()&&!root.contains(document.activeElement))hide();},120));
@@ -159,7 +161,7 @@ export function addRow({label,placeholder,maxlength=200,onAdd,className=''}){
     if(restoreFocus)button.focus({preventScroll:true});
   }
   hide();
-  return {element:root,show,hide,isOpen:()=>open,focus:()=>root.querySelector('input')?.focus({preventScroll:true})};
+  return {element:root,show,hide,isOpen:()=>open,focus:()=>{if(!coarsePointer())root.querySelector('input')?.focus({preventScroll:true});}};
 }
 
 /**

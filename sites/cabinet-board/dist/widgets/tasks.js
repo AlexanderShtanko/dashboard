@@ -18,7 +18,7 @@ function checklist(ctx,{screen=false}={}){
   const add=addRow({label:'Добавить задачу',placeholder:'Новая задача',maxlength:MAX_TASK_LENGTH,className:'tasks-add',onAdd:text=>{
     if(items().length>=MAX_TASKS){ctx.feedback?.(`В списке может быть до ${MAX_TASKS} задач.`);return;}
     save(addTask(items(),text,crypto.randomUUID()));
-    add.show();
+    if(!coarsePointer())add.show();
   }});
 
   function remove(item){

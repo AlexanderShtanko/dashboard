@@ -199,8 +199,9 @@ function cardMenu(button,id){
   selected=id;inspect();highlight();
   widgetMenu.show(button,node,{canOpen:node.type==='folder'||!!registry.get(node.type)?.renderScreen,list,first:index===0,last:index===siblings.length-1});
 }
+let renderedParent;
 function renderBoard(){
-  pendingMouseDrag=null;hold.cancel();widgetMenu.close();disposeCards();world.replaceChildren();const children=store.children(currentParent);
+  pendingMouseDrag=null;hold.cancel();widgetMenu.close();disposeCards();const scrolled=list?board.scrollTop:0;world.replaceChildren();const children=store.children(currentParent);
   if(editingId&&!children.some(node=>node.id===editingId)){editingId=null;inspectorVisible=false;}
   board.classList.toggle('list-view',list);$('#canvas-controls').hidden=list;$('#dock-fit').hidden=list||!children.length;$('#board-help').textContent=boardHelp();$('#view-canvas').setAttribute('aria-pressed',String(!list));$('#view-list').setAttribute('aria-pressed',String(list));$('#undo').disabled=!store.history.length;$('#count').textContent=cardCount(children.length);$('#board-empty').hidden=!!children.length;
   for(const [index,node] of children.entries()){
@@ -228,6 +229,9 @@ function renderBoard(){
     const stem=el('span',{class:'rotation-stem','aria-hidden':'true'});frame.append(stem,el('button',{class:'transform-handle rotate-handle','data-rotate':true,'aria-label':'Повернуть '+node.title}));for(const corner of ['nw','ne','se','sw'])frame.append(el('button',{class:'transform-handle resize-handle '+corner,'data-corner':corner,'aria-label':'Изменить размер '+node.title}));world.append(frame);
   }
   seenCards=new Set(children.map(node=>node.id));highlight();inspect();paintCamera();saved();
+  // Redrawing the list must not throw the reader back to the top.
+  if(list&&scrolled&&renderedParent===currentParent)board.scrollTop=scrolled;
+  renderedParent=currentParent;
 }
 function highlight(){all('.widget:not(.locked-card)').forEach(frame=>{const editing=frame.dataset.id===editingId;frame.classList.toggle('selected',frame.dataset.id===selected);frame.classList.toggle('editing',editing);frame.querySelector('.card-edit-done').hidden=!editing;});board.classList.toggle('editing-card',!!editingId);}
 function renderScreen(){
