@@ -30,3 +30,15 @@ test('storage failures are reported; existing corrupt data is not overwritten',(
 test('rotated resize keeps opposite corner fixed at all four handles',()=>{for(const angle of [0,6,45,90,-135,179])for(const sx of [-1,1])for(const sy of [-1,1]){const l={x:300,y:200,w:300,h:220,rotation:angle},a=angle*Math.PI/180,c=Math.cos(a),s=Math.sin(a);const fixed={x:l.x-c*sx*l.w/2+s*sy*l.h/2,y:l.y-s*sx*l.w/2-c*sy*l.h/2};const point={x:fixed.x+c*sx*410-s*sy*320,y:fixed.y+s*sx*410+c*sy*320};const next=resizeRotated(l,point,sx,sy);assert(Math.abs(next.w-410)<1e-8);assert(Math.abs(next.h-320)<1e-8);assert(Math.abs(next.x-c*sx*next.w/2+s*sy*next.h/2-fixed.x)<1e-8);assert(Math.abs(next.y-s*sx*next.w/2-c*sy*next.h/2-fixed.y)<1e-8);}});
 test('shift moves a card one step among its siblings only',()=>{const {store}=setup();const order=()=>store.children(null).map(n=>n.id);const before=order();store.shift('note-main',-1);assert.deepEqual(order(),['note-main','tasks-main',...before.slice(2)]);store.shift('note-main',-1);assert.deepEqual(order(),['note-main','tasks-main',...before.slice(2)]);store.shift('note-main',1);assert.deepEqual(order(),before);assert.deepEqual(store.children('folder-work').map(n=>n.id),['work-note','work-tasks']);store.undo();assert.deepEqual(order(),['note-main','tasks-main',...before.slice(2)]);});
 test('moving a card out of a folder can place it and is one undo step',()=>{const {store}=setup();store.move('work-note',null,{x:500,y:900});const moved=store.get('work-note');assert.equal(moved.parentId,null);assert.deepEqual([moved.layout.x,moved.layout.y],[500,900]);assert.equal(store.children(null).at(-1).id,'work-note');store.undo();assert.equal(store.get('work-note').parentId,'folder-work');store.move('work-note',null);assert.equal(store.get('work-note').parentId,null);});
+test('card colour and board background are saved, undone and validated',()=>{
+  const {store,storage}=setup();
+  store.setColor('note-main','yellow');store.setBackground('green');
+  const saved=JSON.parse(storage.getItem('cabinet-board:workspace:v1'));
+  assert.equal(saved.nodes.find(n=>n.id==='note-main').color,'yellow');assert.equal(saved.background,'green');
+  assert.equal(store.get(store.duplicate('note-main')).color,'yellow');
+  store.setColor('note-main','');assert.equal('color' in store.get('note-main'),false);
+  store.setBackground('');assert.equal('background' in store.state,false);
+  store.undo();assert.equal(store.state.background,'green');
+  assert.equal('background' in validateWorkspace({...seed,background:'<bad>'},registry),false);
+  assert.throws(()=>validateWorkspace({schemaVersion:1,nodes:[{...seed.nodes[0],color:5}]},registry),/цвет/);
+});

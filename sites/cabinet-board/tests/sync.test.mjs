@@ -135,3 +135,17 @@ test('merge repairs a folder tree broken by moves on both sides', () => {
   const merged = mergeBoards(base, local, remote);
   assert.doesNotThrow(() => new BoardStore(registry, merged, {getItem: () => null, setItem() {}}));
 });
+
+test('card colour and board background from another computer are merged', () => {
+  const base = structuredClone(seed);
+  const local = structuredClone(seed), remote = structuredClone(seed);
+  local.nodes.find(n => n.id === 'note-main').title = 'Здесь';
+  remote.nodes.find(n => n.id === 'note-main').color = 'yellow';
+  remote.background = 'peach';
+  const merged = mergeBoards(base, local, remote);
+  const note = merged.nodes.find(n => n.id === 'note-main');
+  assert.equal(note.title, 'Здесь');
+  assert.equal(note.color, 'yellow');
+  assert.equal(merged.background, 'peach');
+  assert.equal('background' in mergeBoards(base, local, structuredClone(seed)), false);
+});

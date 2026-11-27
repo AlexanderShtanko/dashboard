@@ -95,6 +95,8 @@ export function mergeBoards(base, local, remote, makeId = () => crypto.randomUUI
     node.title = pick(b, l, r, n => n.title).value;
     node.parentId = pick(b, l, r, n => n.parentId).value;
     node.layout = structuredClone(pick(b, l, r, n => n.layout).value);
+    const color = pick(b, l, r, n => n.color ?? null).value;
+    if (color) node.color = color; else delete node.color;
     const protectedFlag = pick(b, l, r, n => Boolean(n.pinProtected)).value;
     if (protectedFlag) node.pinProtected = true; else delete node.pinProtected;
     const body = pick(b, l, r, content);
@@ -128,7 +130,8 @@ export function mergeBoards(base, local, remote, makeId = () => crypto.randomUUI
       seen.add(parent);
     }
   }
-  return {schemaVersion: 1, nodes: merged};
+  const background = pick(base, local, remote, board => board.background ?? null).value;
+  return background ? {schemaVersion: 1, nodes: merged, background} : {schemaVersion: 1, nodes: merged};
 }
 
 /**

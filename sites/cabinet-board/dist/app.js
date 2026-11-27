@@ -1,5 +1,6 @@
 import {registry} from './widgets/index.js';
 import {BoardStore,KEY} from './core/store.js';
+import {BOARD_BACKGROUNDS,BACKGROUND_THEME,cardColor,boardBackground} from './core/colors.js';
 import {el,action,symbol} from './core/dom.js';
 import {resizeRotated,clamp,normalizeAngle,boundsOf,containsPoint} from './core/geometry.js';
 import {seed} from './seed.js';
@@ -92,8 +93,9 @@ function finishEditing(){hold.cancel();editingId=null;inspectorVisible=false;sel
 for(const [id,name] of Object.entries({'board-menu':'menu','add-widget':'plus','dock-fit':'fit',fullscreen:'expand',duplicate:'duplicate',front:'front',delete:'trash','pan-mode':'move','zoom-out':'minus','zoom-in':'plus'}))$('#'+id).replaceChildren(icon(name));
 for(const [id,name] of Object.entries({undo:'undo','pin-settings':'lock','pin-lock-all':'lock','drive-connect':'cloud','drive-signin':'cloud','drive-disconnect':'cloud',export:'download',import:'upload'}))$('#'+id+' .menu-item-icon').replaceChildren(icon(name));
 all('[data-close].icon-button').forEach(button=>button.replaceChildren(icon('close')));
-const widgetMenu=createWidgetMenu((action,id)=>{
+const widgetMenu=createWidgetMenu((action,id,value)=>{
   if(!store.get(id)||lockFor(id))return;
+  if(action==='color'){attempt(()=>store.setColor(id,cardColor(value)));return;}
   if(action==='lock'){lockCards(id);return;}
   if(action==='protect'){
     requirePin('Защитить карточку',()=>{
@@ -257,7 +259,7 @@ function renderBoard(){
       paintLayout(frame,node.layout);frame.style.zIndex=index;world.append(frame);
       continue;
     }
-    const def=registry.get(node.type),frame=el('article',{class:`widget tone-${def?.tone||'white'} ${selected===node.id?'selected':''} ${seenCards.has(node.id)?'':'is-new'}`, 'data-id':node.id,'data-type':node.type,'aria-label':node.title});paintLayout(frame,node.layout);frame.style.zIndex=index;frame.style.setProperty('--entry-delay',Math.min(index,7)*35+'ms');
+    const def=registry.get(node.type),frame=el('article',{class:`widget ${selected===node.id?'selected':''} ${seenCards.has(node.id)?'':'is-new'}`, 'data-id':node.id,'data-type':node.type,'data-color':cardColor(node.color),'aria-label':node.title});paintLayout(frame,node.layout);frame.style.zIndex=index;frame.style.setProperty('--entry-delay',Math.min(index,7)*35+'ms');
     const opensDetails = node.type === 'folder' || Boolean(def?.renderScreen);
     const dragHandle = el('button', {
       class:'widget-drag', 'data-drag':true,
@@ -282,7 +284,7 @@ function renderBoard(){
 function highlight(){all('.widget:not(.locked-card)').forEach(frame=>{const editing=frame.dataset.id===editingId;frame.classList.toggle('selected',frame.dataset.id===selected);frame.classList.toggle('editing',editing);frame.querySelector('.card-edit-done').hidden=!editing;});board.classList.toggle('editing-card',!!editingId);}
 function renderScreen(){
   const node=store.get(route.id);if(!node){go();return;}
-  const content=$('#detail-content');content.replaceChildren();
+  const content=$('#detail-content');content.replaceChildren();content.dataset.color=lockFor(node.id)?'':cardColor(node.color);
   if(lockFor(node.id)){
     content.append(el('div',{class:'protected-route'},icon('lock'),action('Открыть по PIN',()=>unlockCard(node.id),'button primary')));
     $('#page-title').focus({preventScroll:true});
@@ -306,7 +308,17 @@ function navigate(){
   heading();sidebar();inspect();updatePinControls();
   if(detail)renderScreen();else{currentParent=route.id;restoreCamera();}saved();
 }
+// The board background is part of the saved board: it follows undo, import and sync.
+function paintBackground(){
+  const key=boardBackground(store.state.background);
+  document.documentElement.dataset.bg=key;
+  document.querySelector('meta[name=theme-color]')?.setAttribute('content',BACKGROUND_THEME[key]);
+  all('#bg-swatches .swatch').forEach(button=>{const on=button.dataset.bg===key;button.setAttribute('aria-pressed',String(on));button.replaceChildren(...(on?[icon('check')]:[]));});
+}
+$('#bg-swatches').replaceChildren(...BOARD_BACKGROUNDS.map(([key,label])=>el('button',{type:'button',class:'swatch','data-bg':key,title:label,'aria-label':'Фон: '+label,'aria-pressed':'false',onClick:()=>attempt(()=>store.setBackground(key))})));
+paintBackground();
 function refresh(){
+  paintBackground();
   sidebar();heading();updatePinControls();$('#undo').disabled=!store.history.length;
   if(!board.hidden&&!lockFor(route.id)&&!quietUpdate)renderBoard();
   saved();
@@ -338,7 +350,7 @@ function zoom(factor,x=board.clientWidth/2,y=board.clientHeight/2){const z=clamp
 function point(event){const r=board.getBoundingClientRect();return {x:(event.clientX-r.left-camera.x)/camera.z,y:(event.clientY-r.top-camera.y)/camera.z};}
 function addType(type){$('#board-options').close();const onScreen=route.kind==='widget',parent=onScreen?(store.get(route.id)?.parentId??null):currentParent;const pos=list||onScreen?undefined:{x:(board.clientWidth/2-camera.x)/camera.z,y:(board.clientHeight/2-camera.y)/camera.z};const id=attempt(()=>store.add(type,parent,pos));if(!id)return;selected=id;$('#catalog').close();if(onScreen)go(parent);else renderBoard();if(list)requestAnimationFrame(()=>all('.widget').find(frame=>frame.dataset.id===id)?.scrollIntoView({block:'center',behavior:'smooth'}));status('Карточка добавлена.');}
 $('#catalog-grid').replaceChildren(...registry.list().map(def=>
-  el('button',{class:'catalog-item tone-'+def.tone,onClick:()=>addType(def.type)},
+  el('button',{class:'catalog-item',onClick:()=>addType(def.type)},
     symbol(def.icon),el('strong',{},def.catalogTitle||def.title),el('p',{},def.description))));
 $('#add-widget').onclick=$('#empty-add').onclick=()=>$('#catalog').showModal();
 $('#board-menu').onclick=()=>$('#board-options').showModal();

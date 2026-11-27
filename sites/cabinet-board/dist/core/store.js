@@ -1,3 +1,4 @@
+import {isColorKey} from './colors.js';
 const KEY='cabinet-board:workspace:v1';
 const clone=value=>structuredClone(value);
 const object=value=>value&&typeof value==='object'&&!Array.isArray(value);
@@ -6,13 +7,15 @@ export function validateWorkspace(input,registry){
   const nodes=input.nodes.map(node=>{
     if(!object(node)||typeof node.id!=='string'||!node.id||node.id.length>100||typeof node.type!=='string'||typeof node.title!=='string'||node.title.length>160||!Number.isInteger(node.version)||node.version<1||!object(node.data)||!object(node.layout)||!(node.parentId===null||typeof node.parentId==='string'))throw new Error('Повреждена запись виджета.');
     if(node.pinProtected!==undefined&&typeof node.pinProtected!=='boolean')throw new Error('Некорректная настройка PIN у виджета.');
+    if(node.color!==undefined&&!isColorKey(node.color))throw new Error('Некорректный цвет виджета.');
     for(const key of ['x','y','w','h','rotation'])if(!Number.isFinite(node.layout[key]))throw new Error('Некорректное положение виджета.');
     if(Math.abs(node.layout.x)>100000||Math.abs(node.layout.y)>100000||node.layout.w<1||node.layout.h<1||node.layout.w>1600||node.layout.h>1600)throw new Error('Размер или положение виджета вне допустимого диапазона.');
     return registry.normalize(clone(node));
   });
   const byId=new Map(nodes.map(n=>[n.id,n]));if(byId.size!==nodes.length)throw new Error('Повторяющиеся идентификаторы.');
   for(const node of nodes){const visited=new Set([node.id]);let parent=node.parentId;while(parent!==null){if(visited.has(parent))throw new Error('Папки не могут содержать сами себя.');visited.add(parent);const folder=byId.get(parent);if(!folder||folder.type!=='folder')throw new Error('Не найдена родительская папка.');parent=folder.parentId;}}
-  return {schemaVersion:1,nodes};
+  // Board-wide look. An unknown value is dropped, never an error: the board itself is still fine.
+  return isColorKey(input.background)?{schemaVersion:1,nodes,background:input.background}:{schemaVersion:1,nodes};
 }
 export class BoardStore {
   constructor(registry,seed,storage=globalThis.localStorage){
@@ -58,6 +61,10 @@ export class BoardStore {
     }
     this.emit();
   }
+  /** Card colour: a key from core/colors.js, or '' for the default. */
+  setColor(id,color){this.commit(draft=>{const n=draft.nodes.find(n=>n.id===id);if(!n)return;if(color)n.color=color;else delete n.color;});}
+  /** Board background: a key from core/colors.js, or '' for the default wallpaper. */
+  setBackground(key){this.commit(draft=>{if(key)draft.background=key;else delete draft.background;});}
   move(id,parentId,position){if(!this.canMove(id,parentId))throw new Error('Нельзя переместить папку внутрь самой себя.');if(this.get(id).parentId===parentId)return;const count=this.children(parentId).length;this.commit(draft=>{const i=draft.nodes.findIndex(n=>n.id===id),n=draft.nodes[i];n.parentId=parentId;n.layout.x=position?.x??190+(count%3)*340;n.layout.y=position?.y??170+Math.floor(count/3)*310;draft.nodes.push(...draft.nodes.splice(i,1));});}
   remove(id){this.commit(draft=>{const n=draft.nodes.find(n=>n.id===id);if(!n)return;draft.nodes.filter(child=>child.parentId===id).forEach((child,i)=>{child.parentId=n.parentId;if(n.pinProtected)child.pinProtected=true;child.layout.x=n.layout.x+35*(i+1);child.layout.y=n.layout.y+35*(i+1);});draft.nodes=draft.nodes.filter(n=>n.id!==id);});}
   duplicate(id){const original=this.get(id);if(!original)return;const descendants=this.state.nodes.filter(node=>this.ancestors(node.id).some(n=>n.id===id));const map=new Map(descendants.map(node=>[node.id,crypto.randomUUID()]));this.commit(draft=>{for(const node of descendants){const n=clone(node);n.id=map.get(node.id);n.parentId=node.id===id?node.parentId:map.get(node.parentId);if(node.id===id){n.title+=' — копия';n.layout.x+=35;n.layout.y+=35;}draft.nodes.push(n);}});return map.get(id);}
