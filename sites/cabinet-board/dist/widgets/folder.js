@@ -76,12 +76,12 @@ export const folder={type:'folder',version:1,title:'Новая папка',catal
     const tiles=el('div',{class:'folder-tiles'},
       shown.map(child=>{
         const openChild=()=>ctx.openChild?ctx.openChild(child.id):open();
-        const tile=el('button',{type:'button',class:'folder-tile',title:child.locked?'Закрыто PIN-кодом':'Открыть «'+child.title+'». Перетащите на доску, чтобы вынести из папки','aria-haspopup':'menu','aria-expanded':'false',
+        const tile=el('button',{type:'button',class:'folder-tile',title:child.locked?'Закрыто PIN-кодом. Перетащите на доску, чтобы вынести из папки':'Открыть «'+child.title+'». Перетащите на доску, чтобы вынести из папки','aria-haspopup':'menu','aria-expanded':'false',
           'aria-label':child.locked?'Закрытая карточка, открыть по PIN':'Открыть '+child.title,onClick:openChild},
           symbol(child.locked?'lock':registry.get(child.type)?.icon),el('small',{},child.title));
-                if(!child.locked&&ctx.moveChildOut)carry(tile,{
+                if(ctx.moveChildOut)carry(tile,{
           menu:()=>({title:child.title,items:[
-            {label:'Открыть',icon:'open',run:openChild},
+            {label:child.locked?'Открыть по PIN':'Открыть',icon:child.locked?'lock':'open',run:openChild},
             {label:node.parentId?'Вынести из папки':'Вынести на доску',icon:'out',run:()=>ctx.moveChildOut(child.id)}]}),
           drop:(x,y)=>ctx.dropChild?ctx.dropChild(child.id,x,y):ctx.moveChildOut(child.id)});
         return tile;
