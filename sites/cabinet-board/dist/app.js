@@ -140,6 +140,14 @@ function moveOut(id){
   const l=folder.layout;
   moveTo(id,folder.parentId,{x:l.x+36,y:l.y+l.h/2+node.layout.h/2+28});
 }
+// A tile dragged off a folder card: it lands where it was dropped, or in the folder it was dropped on.
+function dropChild(id,clientX,clientY){
+  const node=store.get(id),folder=store.get(node?.parentId);if(!folder||lockFor(id))return;
+  if(list||board.hidden||folder.parentId!==currentParent){moveOut(id);return;}
+  const p=point({clientX,clientY});
+  const target=store.children(currentParent).filter(n=>n.type==='folder'&&n.id!==folder.id&&!lockFor(n.id)&&store.canMove(id,n.id)&&containsPoint(n.layout,p)).at(-1);
+  if(target)moveTo(id,target.id);else moveTo(id,folder.parentId,{x:clamp(p.x,-100000,100000),y:clamp(p.y,-100000,100000)});
+}
 function renameCard(id){
   const node=store.get(id);if(!node)return;
   const input=el('input',{value:node.title,maxlength:160,enterkeyhint:'done',autocomplete:'off'});
@@ -188,7 +196,7 @@ function mount(result,container,screen=false){if(result?.element){container.appe
 let quietUpdate=false;
 function ctx(node){return {node,registry,latest:()=>store.get(node.id)||node,
   children:id=>store.children(id).map(child=>lockFor(child.id)?{id:child.id,type:null,title:lockedTitle,locked:true}:child),
-  open:()=>openNode(node.id),openChild:id=>{if(lockFor(id))unlockCard(id);else openNode(id);},moveChildOut:id=>moveOut(id),
+  open:()=>openNode(node.id),openChild:id=>{if(lockFor(id))unlockCard(id);else openNode(id);},moveChildOut:id=>moveOut(id),dropChild,
   update:(data,options={})=>attempt(()=>{quietUpdate=options.render===false;try{store.update(node.id,{data});}finally{quietUpdate=false;}if(!store.error&&!options.silent)status('Сохранено в этом браузере.');}),
   feedback:status};}
 function sidebar(){
