@@ -26,17 +26,24 @@ jobs:
       - run: npm test
         working-directory: sites/cabinet-board
 
-  deploy:
+  # The site archive is uploaded in its own job. When upload and deploy shared one job, the deploy
+  # sometimes asked for the archive before GitHub listed it ("No artifacts named github-pages").
+  build:
     needs: test
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: sites/cabinet-board/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - id: deployment
         uses: actions/deploy-pages@v4
