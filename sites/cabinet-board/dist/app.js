@@ -112,11 +112,34 @@ const widgetMenu=createWidgetMenu((action,id)=>{
   selected=id;inspect();highlight();
   if(action==='open'){openNode(id);return;}
   if(action==='rename'){renameCard(id);return;}
+  if(action==='out'){moveOut(id);return;}
   if(action==='settings'){beginEditing(id,{showInspector:!coarsePointer()});return;}
   if(action==='up'||action==='down'){attempt(()=>store.shift(id,action==='up'?-1:1));all('.widget').find(frame=>frame.dataset.id===id)?.scrollIntoView({block:'nearest',behavior:'smooth'});return;}
   const controls={move:'#move',duplicate:'#duplicate',front:'#front',delete:'#delete'};
   if(controls[action])$(controls[action]).click();
 });
+// Takes a card out of its folder: one level up, next to the folder's own card.
+function outLabel(node){
+  const folder=store.get(node.parentId);if(!folder)return '';
+  const up=store.get(folder.parentId);
+  return up?'Вынести в «'+up.title+'»':'Вынести на доску';
+}
+function moveTo(id,dest,position){
+  const node=store.get(id);if(!node||lockFor(id))return false;
+  if(!attempt(()=>{store.move(id,dest,position);return true;}))return false;
+  const mark=store.history.at(-1),target=dest?store.get(dest)?.title:null;
+  selected=null;finishEditing();if(!board.hidden)renderBoard();
+  status('«'+node.title+'» — '+(target?'теперь в «'+target+'».':'теперь на доске.'),{label:'Отменить',run:()=>{
+    if(store.history.at(-1)!==mark){status('После переноса были другие изменения. Отмена по шагам — в меню.');return;}
+    store.undo();
+  }});
+  return true;
+}
+function moveOut(id){
+  const node=store.get(id),folder=store.get(node?.parentId);if(!folder||lockFor(id))return;
+  const l=folder.layout;
+  moveTo(id,folder.parentId,{x:l.x+36,y:l.y+l.h/2+node.layout.h/2+28});
+}
 function renameCard(id){
   const node=store.get(id);if(!node)return;
   const input=el('input',{value:node.title,maxlength:160,enterkeyhint:'done',autocomplete:'off'});
@@ -165,7 +188,7 @@ function mount(result,container,screen=false){if(result?.element){container.appe
 let quietUpdate=false;
 function ctx(node){return {node,registry,latest:()=>store.get(node.id)||node,
   children:id=>store.children(id).map(child=>lockFor(child.id)?{id:child.id,type:null,title:lockedTitle,locked:true}:child),
-  open:()=>openNode(node.id),openChild:id=>{if(lockFor(id))unlockCard(id);else openNode(id);},
+  open:()=>openNode(node.id),openChild:id=>{if(lockFor(id))unlockCard(id);else openNode(id);},moveChildOut:id=>moveOut(id),
   update:(data,options={})=>attempt(()=>{quietUpdate=options.render===false;try{store.update(node.id,{data});}finally{quietUpdate=false;}if(!store.error&&!options.silent)status('Сохранено в этом браузере.');}),
   feedback:status};}
 function sidebar(){
@@ -185,9 +208,11 @@ function heading(){
   const parent=store.get((locked||node)?.parentId),backLabel=parent&&!lockFor(parent.id)?parent.title:'Моя доска';
   $('#back').replaceChildren(icon('chevron-left'),el('span',{},backLabel));$('#back').setAttribute('aria-label','Назад: '+backLabel);
   const crumbs=$('#breadcrumbs');
-  crumbs.replaceChildren(action('Моя доска',()=>go(),'crumb'));
+  const root=action('Моя доска',()=>go(),'crumb');root.dataset.dest='';
+  crumbs.replaceChildren(root);
   if(node&&!locked&&route.kind==='board')for(const ancestor of store.ancestors(node.id)){
-    crumbs.append(el('span',{'aria-hidden':'true'},'/'),action(ancestor.title,()=>go(ancestor.id),'crumb'));
+    const crumb=action(ancestor.title,()=>go(ancestor.id),'crumb');if(ancestor.id!==node.id)crumb.dataset.dest=ancestor.id;
+    crumbs.append(el('span',{'aria-hidden':'true'},'/'),crumb);
   }
 }
 function inspect(){const node=lockFor(selected)?null:store.get(selected);$('#inspector').hidden=!inspectorVisible||!node||board.hidden;$('#item-title').value=node?.title??'';if(!node)return;$('#item-width').value=Math.round(node.layout.w);$('#item-height').value=Math.round(node.layout.h);$('#item-angle').value=Math.round(node.layout.rotation);const min=registry.get(node.type)?.minSize||{w:220,h:170};$('#item-width').min=min.w;$('#item-height').min=min.h;}
@@ -197,7 +222,7 @@ function cardMenu(button,id){
   const node=store.get(id);if(!node||lockFor(id))return;
   const siblings=store.children(currentParent),index=siblings.findIndex(item=>item.id===id);
   selected=id;inspect();highlight();
-  widgetMenu.show(button,node,{canOpen:node.type==='folder'||!!registry.get(node.type)?.renderScreen,list,first:index===0,last:index===siblings.length-1});
+  widgetMenu.show(button,node,{canOpen:node.type==='folder'||!!registry.get(node.type)?.renderScreen,list,first:index===0,last:index===siblings.length-1,outLabel:outLabel(node)});
 }
 let renderedParent;
 function renderBoard(){
@@ -381,7 +406,7 @@ function startCardDrag(frame,event,handle=null){
   if(drag.kind==='resize'){drag.sx=handle.dataset.corner.includes('e')?1:-1;drag.sy=handle.dataset.corner.includes('s')?1:-1;}
   if(drag.kind==='rotate')drag.startAngle=Math.atan2(p.y-node.layout.y,p.x-node.layout.x)*180/Math.PI;
   try{board.setPointerCapture(event.pointerId);}catch{drag=null;return;}
-  frame.classList.add('dragging-card');board.classList.add('dragging');
+  frame.classList.add('dragging-card');board.classList.add('dragging');document.body.classList.toggle('carrying-card',drag.kind==='move'&&!!currentParent);
   (handle||frame.querySelector('[data-drag]')).focus({preventScroll:true});highlight();$('#inspector').hidden=true;
   return true;
 }
@@ -421,17 +446,24 @@ document.addEventListener('pointermove',event=>{
   if(drag.kind==='move')drag.preview={...l,x:clamp(l.x+p.x-drag.p.x,-100000,100000),y:clamp(l.y+p.y-drag.p.y,-100000,100000)};
   if(drag.kind==='resize')drag.preview=resizeRotated(l,p,drag.sx,drag.sy,registry.get(node.type)?.minSize,event.shiftKey);
   if(drag.kind==='rotate'){let a=l.rotation+Math.atan2(p.y-l.y,p.x-l.x)*180/Math.PI-drag.startAngle;if(event.shiftKey)a=Math.round(a/15)*15;drag.preview={...l,rotation:normalizeAngle(a)};}
-  paintLayout(drag.frame,drag.preview);all('.drop-target').forEach(n=>n.classList.remove('drop-target'));drag.target=null;
-  if(drag.kind==='move'&&Math.hypot(event.clientX-drag.startX,event.clientY-drag.startY)>8){const target=store.children(currentParent).filter(n=>n.type==='folder'&&!lockFor(n.id)&&store.canMove(drag.id,n.id)&&containsPoint(n.layout,p)).at(-1);if(target){drag.target=target.id;all('.widget').find(frame=>frame.dataset.id===target.id)?.classList.add('drop-target');}}
+  paintLayout(drag.frame,drag.preview);all('.drop-target').forEach(n=>n.classList.remove('drop-target'));drag.target=null;drag.crumb=undefined;
+  if(drag.kind==='move'&&Math.hypot(event.clientX-drag.startX,event.clientY-drag.startY)>8){const target=store.children(currentParent).filter(n=>n.type==='folder'&&!lockFor(n.id)&&store.canMove(drag.id,n.id)&&containsPoint(n.layout,p)).at(-1);if(target){drag.target=target.id;all('.widget').find(frame=>frame.dataset.id===target.id)?.classList.add('drop-target');}
+    // Inside a folder the path at the top takes cards too: drop one on «Моя доска» to carry it out.
+    const crumb=currentParent?all('#breadcrumbs .crumb[data-dest]').find(button=>{const r=button.getBoundingClientRect();return event.clientX>=r.left-8&&event.clientX<=r.right+8&&event.clientY>=r.top-8&&event.clientY<=r.bottom+8;}):null;
+    if(crumb&&store.canMove(drag.id,crumb.dataset.dest||null)){drag.target=null;drag.crumb=crumb.dataset.dest||null;crumb.classList.add('drop-target');}}
 },{passive:true});
 function endDrag(event,cancel=false){
   if(!drag||drag.pointer!==event.pointerId)return;const d=drag;drag=null;
-  hold.cancel();board.classList.remove('panning','dragging');d.frame?.classList.remove('dragging-card');
+  hold.cancel();board.classList.remove('panning','dragging');document.body.classList.remove('carrying-card');d.frame?.classList.remove('dragging-card');
   if(board.hasPointerCapture(event.pointerId))board.releasePointerCapture(event.pointerId);
   if(d.kind==='pan'){if(cancel)camera=d.camera;paintCamera();rememberCamera();return;}
   const changed=Object.keys(d.original).some(key=>d.original[key]!==d.preview[key]);
   suppressClickUntil=performance.now()+600;
-  if(!cancel&&changed){
+  if(!cancel&&changed&&d.crumb!==undefined){
+    all('.drop-target').forEach(frame=>frame.classList.remove('drop-target'));
+    const folder=store.get(currentParent),near=folder&&folder.parentId===d.crumb?{x:folder.layout.x+36,y:folder.layout.y+folder.layout.h/2+d.original.h/2+28}:undefined;
+    moveTo(d.id,d.crumb,near);
+  }else if(!cancel&&changed){
     if(d.target){
       const moved=attempt(()=>{store.move(d.id,d.target);return true;});
       if(moved){selected=null;status('Карточка перемещена в папку.');}

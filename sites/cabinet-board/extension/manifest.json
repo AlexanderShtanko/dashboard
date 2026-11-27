@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Кабинет — личная доска",
   "description": "Личная доска на новой вкладке: заметки, задачи, ссылки, накопления и папки. Синхронизация через Chrome и Google Диск.",
-  "version": "0.7.2",
+  "version": "0.8.0",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqn50CdPJY6ij/OKE48q1hfh9tLboq4e4fhIbPR0Zu7oCXPWV//LVfLjCDR0wMMdcSVbMWM3lF8h6AZpiL2E6HdAStneH7Xmx28dctjEiTR9wVZE+1b1H9s+PeqUU9LJ9AHGSaKwnSX0aDoQK7pZp+AG8cjWAWFnC3jP13Zesz5f0m+OSKOiVdZj6N5egENCGrmQNuCW7nJOmIZuGQNjLHAD4AAv57Pr689rRCDrS8Q6CJCqd6yi+Xny5RJWpIZtg/r9d9GUikQEr+OSW00ucC7b6AZRoXgmSjMuq2bjgTHtqB2Zq46cVJFqI6SWR7XE4u6ov3s3DR4iLSeRxAi3HAwIDAQAB",
   "permissions": [
     "storage",
