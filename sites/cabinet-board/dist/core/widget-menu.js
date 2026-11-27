@@ -1,6 +1,7 @@
 import {icon} from './icons.js';
 import {el} from './dom.js';
 import {swallowTap} from './ui.js';
+import {CARD_COLORS,cardColor} from './colors.js';
 
 /** Body-level menu: canvas zoom, rotation and clipping must not affect it. */
 export function createWidgetMenu(onAction){
@@ -40,7 +41,11 @@ export function createWidgetMenu(onAction){
       ]:[['protect','Защитить PIN-кодом','lock']]),
       ['delete','Удалить','trash']
     ].filter(Boolean);
-    menu.replaceChildren(el('div',{class:'widget-menu-title',role:'presentation'},node.title),...entries.map(entry=>{
+    const current=cardColor(node.color);
+    const swatches=el('div',{class:'swatch-row',role:'group','aria-label':'Цвет карточки'},...CARD_COLORS.map(([key,label])=>
+      el('button',{type:'button',class:'swatch','data-color':key,title:label,'aria-label':'Цвет: '+label,'aria-pressed':String(key===current),
+        onClick:()=>{close();onAction('color',node.id,key);}},key===current?icon('check'):null)));
+    menu.replaceChildren(el('div',{class:'widget-menu-title',role:'presentation'},node.title),swatches,...entries.map(entry=>{
       if(entry==='-')return el('hr',{class:'widget-menu-divider'});
       const [action,label,glyph]=entry;
       return el('button',{type:'button',role:'menuitem',class:'widget-menu-item'+(action==='delete'?' danger':''),
@@ -52,14 +57,14 @@ export function createWidgetMenu(onAction){
     const left=Math.max(padding,Math.min(rect.right-width,window.innerWidth-width-padding));
     const top=rect.bottom+gap+height<=window.innerHeight-padding?rect.bottom+gap:Math.max(padding,rect.top-height-gap);
     menu.style.left=left+'px';menu.style.top=top+'px';
-    menu.querySelector('button').focus({preventScroll:true});
+    menu.querySelector('.widget-menu-item').focus({preventScroll:true});
   }
   menu.addEventListener('keydown',event=>{
     if(event.key==='Escape'){event.preventDefault();event.stopPropagation();close(true);return;}
     if(event.key==='Tab'){close(true);return;}
     if(!['ArrowDown','ArrowUp','Home','End'].includes(event.key))return;
     event.preventDefault();event.stopPropagation();
-    const items=[...menu.querySelectorAll('button')],index=items.indexOf(document.activeElement);
+    const items=[...menu.querySelectorAll('.widget-menu-item')],index=items.indexOf(document.activeElement);
     const next=event.key==='Home'?0:event.key==='End'?items.length-1:(index+(event.key==='ArrowDown'?1:-1)+items.length)%items.length;
     items[next].focus();
   });
