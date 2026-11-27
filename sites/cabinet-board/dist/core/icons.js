@@ -29,6 +29,7 @@ const paths={
   cloud:['M7 18a4 4 0 0 1-.6-7.96A6 6 0 0 1 18 9.5a4.25 4.25 0 0 1-.5 8.5Z'],
   download:['M12 4v11m-4-4 4 4 4-4','M5 19h14'],upload:['M12 15V4m-4 4 4-4 4 4','M5 19h14'],
   board:['M4 5h7v6H4ZM13 5h7v9h-7ZM4 13h7v6H4ZM13 16h7v3h-7Z'],
+  out:['M9 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4','M10 12h10m-4-4 4 4-4 4'],
   unknown:['m12 3 9 9-9 9-9-9Z'],
 };
 export function icon(name){

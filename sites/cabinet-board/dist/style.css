@@ -1239,3 +1239,7 @@ input:focus,textarea:focus,select:focus{background:#fffdf9;box-shadow:var(--well
 .list-view .widget-content{overscroll-behavior:auto;}
 @media(max-width:600px){.list-view .widget:not([data-type=note]) .widget-content{overflow:visible;}}
 @media(pointer:coarse){.list-view .habit-grid:not(.habit-grid-large) .habit-name{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.25;}}
+/* A card being carried inside a folder: the path shows where it can be dropped. */
+body.carrying-card .floating-breadcrumbs{z-index:2600;}
+body.carrying-card .floating-breadcrumbs .crumb[data-dest]{padding-inline:10px;border-radius:10px;outline:1.5px dashed #6f8f6a;outline-offset:-1px;background:#ffffff8c;}
+body.carrying-card .floating-breadcrumbs .crumb.drop-target{outline:2px solid var(--green);background:var(--green-soft);color:var(--green);}

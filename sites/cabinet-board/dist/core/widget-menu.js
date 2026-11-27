@@ -16,7 +16,7 @@ export function createWidgetMenu(onAction){
     previous?.setAttribute('aria-expanded','false');
     if(restoreFocus&&previous?.isConnected)previous.focus({preventScroll:true});
   }
-  function show(button,node,{canOpen=false,list=false,first=false,last=false}={}){
+  function show(button,node,{canOpen=false,list=false,first=false,last=false,outLabel=''}={}){
     if(anchor===button&&!menu.hidden){close(true);return;}
     close();anchor=button;
     button.setAttribute('aria-expanded','true');
@@ -28,6 +28,7 @@ export function createWidgetMenu(onAction){
       list?null:['settings','Размер и поворот','sliders'],
       ['duplicate','Дублировать','duplicate'],
       '-',
+      outLabel?['out',outLabel,'out']:null,
       ['move','Переместить в папку…','folder'],
       list&&!first?['up','Выше в списке','arrow-up']:null,
       list&&!last?['down','Ниже в списке','arrow-down']:null,
