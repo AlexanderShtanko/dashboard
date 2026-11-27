@@ -249,7 +249,7 @@ export const daily = {
       root.replaceChildren(...[head, nav,
         table ? table.element : el('p', {class:'muted daily-empty'}, 'Добавьте действие, которое хотите делать каждый день: прогулка, чтение, вода.'),
         actions.length < maxActions ? add.element : el('p', {class:'muted'}, `В одном виджете может быть до ${maxActions} действий.`),
-        actions.length ? el('p', {class:'muted daily-help'}, coarsePointer() ? 'Нажмите на квадрат, чтобы отметить день. Удержите строку или нажмите ⋯, чтобы изменить её или поменять порядок.' : 'Нажмите на квадрат, чтобы отметить день. Перетащите строку мышью, чтобы поменять порядок.') : null].filter(Boolean));
+        actions.length ? el('p', {class:'muted daily-help'}, coarsePointer() ? 'Нажмите на кружок, чтобы отметить день. Удержите строку или нажмите ⋯, чтобы изменить её или поменять порядок.' : 'Нажмите на квадрат, чтобы отметить день. Перетащите строку мышью, чтобы поменять порядок.') : null].filter(Boolean));
       if (keepAdd) add.focus();
     }
     render();

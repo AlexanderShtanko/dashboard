@@ -1046,14 +1046,19 @@ input:focus,textarea:focus,select:focus{background:var(--surface-0);border-color
 .task-check:hover::after{border-color:var(--primary);}
 .task-check:checked{background:var(--primary);border-color:var(--primary);box-shadow:none;}
 .task-check:checked::after{border-color:#fff;}
-.habit-cell{border:2px solid var(--outline-variant);border-radius:6px;background:transparent;box-shadow:none;}
-.habit-cell:hover{border-color:var(--primary);color:#0b57d066;box-shadow:none;}
-.habit-cell.is-today{border-color:var(--primary);box-shadow:none;}
-.habit-cell.is-done{background:var(--primary);border-color:var(--primary);color:#fff;box-shadow:none;}
-.habit-grid-large .habit-cell{border-radius:10px;}
-.widget[data-type=daily] .habit-cell,.widget[data-type=daily] .task-check{background-color:transparent;}
-.widget[data-type=daily] .habit-cell.is-done,.widget[data-type=daily] .task-check:checked{background-color:var(--primary);}
-.habit-day-label.is-today,.habit-day-label.is-today strong,.daily-is-today{color:var(--primary);}
+/* Habit cells: quiet tonal dots. Empty is a faint fill, done is a soft tint with a check, today has a thin ring. */
+.widget[data-type=daily]{background:var(--surface-0);}
+.widget[data-type=daily] .widget-drag .symbol{background:var(--primary-container);color:var(--on-primary-container);}
+.habit-cell{border:0;border-radius:50%;background:var(--surface-3);color:transparent;box-shadow:none;}
+.habit-cell:hover{background:var(--surface-4);color:#0b57d080;box-shadow:none;}
+.habit-cell.is-today{box-shadow:inset 0 0 0 1.5px #0b57d099;}
+.habit-cell.is-done{background:var(--primary-container);color:var(--primary);box-shadow:none;}
+.habit-cell.is-done:hover{background:#c0d6fb;color:var(--primary);}
+.habit-cell.is-done.is-today{box-shadow:inset 0 0 0 1.5px #0b57d099;}
+.habit-grid-large .habit-cell{border-radius:50%;}
+.widget[data-type=daily] .task-check{background-color:transparent;}
+.widget[data-type=daily] .task-check:checked{background-color:var(--primary);}
+.habit-day-label.is-today,.habit-day-label.is-today strong,.daily-is-today{color:var(--primary);font-weight:500;}
 .daily-day:hover,.daily-day[aria-pressed=true]{background:var(--secondary-container);}
 .daily-day[aria-pressed=true]{border-color:transparent;}
 .daily-day[aria-pressed=true] strong{color:var(--on-secondary-container);}
