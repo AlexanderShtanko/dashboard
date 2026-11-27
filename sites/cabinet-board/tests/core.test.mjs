@@ -42,3 +42,9 @@ test('card colour and board background are saved, undone and validated',()=>{
   assert.equal('background' in validateWorkspace({...seed,background:'<bad>'},registry),false);
   assert.throws(()=>validateWorkspace({schemaVersion:1,nodes:[{...seed.nodes[0],color:5}]},registry),/цвет/);
 });
+test('a board with no saved background is grey, and the wallpaper stays a choice',async()=>{
+  const {boardBackground,BOARD_BACKGROUNDS,BACKGROUND_THEME}=await import('../dist/core/colors.js');
+  assert.equal(boardBackground(undefined),'grey');assert.equal(boardBackground('nope'),'grey');
+  assert.equal(boardBackground('wallpaper'),'wallpaper');assert.equal(boardBackground('peach'),'peach');
+  for(const [key] of BOARD_BACKGROUNDS)assert.ok(BACKGROUND_THEME[key],key);
+});
