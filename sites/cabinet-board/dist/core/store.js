@@ -63,7 +63,7 @@ export class BoardStore {
   }
   /** Card colour: a key from core/colors.js, or '' for the default. */
   setColor(id,color){this.commit(draft=>{const n=draft.nodes.find(n=>n.id===id);if(!n)return;if(color)n.color=color;else delete n.color;});}
-  /** Board background: a key from core/colors.js, or '' for the default wallpaper. */
+  /** Board background: a key from core/colors.js, or '' for the default (grey). */
   setBackground(key){this.commit(draft=>{if(key)draft.background=key;else delete draft.background;});}
   move(id,parentId,position){if(!this.canMove(id,parentId))throw new Error('Нельзя переместить папку внутрь самой себя.');if(this.get(id).parentId===parentId)return;const count=this.children(parentId).length;this.commit(draft=>{const i=draft.nodes.findIndex(n=>n.id===id),n=draft.nodes[i];n.parentId=parentId;n.layout.x=position?.x??190+(count%3)*340;n.layout.y=position?.y??170+Math.floor(count/3)*310;draft.nodes.push(...draft.nodes.splice(i,1));});}
   remove(id){this.commit(draft=>{const n=draft.nodes.find(n=>n.id===id);if(!n)return;draft.nodes.filter(child=>child.parentId===id).forEach((child,i)=>{child.parentId=n.parentId;if(n.pinProtected)child.pinProtected=true;child.layout.x=n.layout.x+35*(i+1);child.layout.y=n.layout.y+35*(i+1);});draft.nodes=draft.nodes.filter(n=>n.id!==id);});}

@@ -1,6 +1,6 @@
 import {registry} from './widgets/index.js';
 import {BoardStore,KEY} from './core/store.js';
-import {BOARD_BACKGROUNDS,BACKGROUND_THEME,cardColor,boardBackground} from './core/colors.js';
+import {BOARD_BACKGROUNDS,BACKGROUND_THEME,BACKGROUND_THEME_DARK,cardColor,boardBackground} from './core/colors.js';
 import {el,action,symbol} from './core/dom.js';
 import {resizeRotated,clamp,normalizeAngle,boundsOf,containsPoint} from './core/geometry.js';
 import {seed} from './seed.js';
@@ -312,10 +312,14 @@ function navigate(){
 function paintBackground(){
   const key=boardBackground(store.state.background);
   document.documentElement.dataset.bg=key;
-  document.querySelector('meta[name=theme-color]')?.setAttribute('content',BACKGROUND_THEME[key]);
+  const theme=window.cabinetTheme;
+  document.querySelector('meta[name=theme-color]')?.setAttribute('content',(theme?.theme==='dark'?BACKGROUND_THEME_DARK:BACKGROUND_THEME)[key]);
+  all('#theme-switch button').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.themeMode===(theme?.mode||'auto'))));
   all('#bg-swatches .swatch').forEach(button=>{const on=button.dataset.bg===key;button.setAttribute('aria-pressed',String(on));button.replaceChildren(...(on?[icon('check')]:[]));});
 }
 $('#bg-swatches').replaceChildren(...BOARD_BACKGROUNDS.map(([key,label])=>el('button',{type:'button',class:'swatch','data-bg':key,title:label,'aria-label':'Фон: '+label,'aria-pressed':'false',onClick:()=>attempt(()=>store.setBackground(key))})));
+all('#theme-switch button').forEach(button=>{button.onclick=()=>window.cabinetTheme?.set(button.dataset.themeMode);});
+window.addEventListener('cabinet-theme',paintBackground);
 paintBackground();
 function refresh(){
   paintBackground();

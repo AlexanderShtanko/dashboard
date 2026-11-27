@@ -2,8 +2,8 @@
 // Same-origin files: the network comes first, so a new version shows up on the very next launch;
 // the cache is only the fallback when there is no connection (or the network is too slow).
 // Google and currency requests are never cached.
-const CACHE = 'cabinet-v12';
-const SHELL = ['./', './index.html', './style.css', './app.js', './manifest.webmanifest', './icons/icon-192.png'];
+const CACHE = 'cabinet-v14';
+const SHELL = ['./', './index.html', './style.css', './app.js', './theme.js', './manifest.webmanifest', './icons/icon-192.png'];
 const TIMEOUT = 4000;
 
 self.addEventListener('install', event => {
