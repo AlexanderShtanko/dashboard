@@ -311,7 +311,7 @@ function boardHelp(){
 function fit(){
   if(list||board.hidden)return;
   const b=boundsOf(store.children(currentParent)),w=board.clientWidth,h=board.clientHeight;
-  // The dock sits at the top on wide screens and at the bottom on phones: keep cards clear of it.
+  // The dock (shelf) sits at the bottom centre: keep cards clear of it.
   const area=board.getBoundingClientRect(),dock=$('.workspace-dock').getBoundingClientRect(),low=dock.top>area.top+h/2;
   const crumbs=$('#breadcrumbs').hidden?0:$('#breadcrumbs').getBoundingClientRect().bottom-area.top;
   const top=Math.min(Math.max(low?0:dock.bottom-area.top,crumbs)+12,h/3),bottom=low?Math.min(area.bottom-dock.top+12,h/3):24;

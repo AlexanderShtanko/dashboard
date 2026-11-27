@@ -5,7 +5,7 @@ import {maxAccounts, maxBalances, localDate, isCurrency, isBalanceDate, isBalanc
 import {rateSnapshot, fetchRates} from './savings-rates.js';
 
 const commonCurrencies = ['EUR', 'USD', 'RUB', 'GBP', 'CHF', 'JPY', 'CNY', 'CAD', 'AUD', 'AED', 'TRY', 'PLN', 'UAH', 'KZT', 'GEL'];
-const defaultColors = ['#52754e', '#577997', '#ad7848', '#895e71', '#697098'];
+const defaultColors = ['#1a73e8', '#188038', '#e37400', '#9334e6', '#007b83'];
 const dateFormat = new Intl.DateTimeFormat('ru-RU', {day:'numeric', month:'short', year:'numeric', timeZone:'UTC'});
 const showDate = day => dateFormat.format(new Date(`${day}T00:00:00Z`));
 const money = (amount, currency) => new Intl.NumberFormat('ru-RU', {

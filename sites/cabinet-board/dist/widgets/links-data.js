@@ -24,8 +24,8 @@ export function avatarLetter(item){
   return (match?match[0]:'•').toLocaleUpperCase('ru');
 }
 
-// Muted paper inks; the same site always gets the same colour on every device.
-const palette=['#7c8f6a','#a0775c','#6f8597','#9a7a94','#b08a4f','#5f8c84','#8b6f5c','#7a7fa3'];
+// Google Material tones; the same site always gets the same colour on every device.
+const palette=['#1a73e8','#d93025','#188038','#e37400','#9334e6','#007b83','#c5221f','#3949ab'];
 export function avatarColor(item){
   const key=hostOf(item.url)||displayTitle(item);let hash=0;
   for(const char of key)hash=(hash*31+char.codePointAt(0))>>>0;
