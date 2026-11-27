@@ -1321,3 +1321,30 @@ body.carrying-card .floating-breadcrumbs .crumb.drop-target{outline:2px solid va
 .folder-tile-ghost.will-drop{transform:scale(1.12) rotate(-3deg);outline:2px solid var(--primary);outline-offset:2px;}
 body.carrying-tile{cursor:grabbing;user-select:none;-webkit-user-select:none;}
 @media(prefers-reduced-motion:reduce){.folder-tile-ghost{transition:none;}}
+
+/* ───────── Top bar: ChromeOS app bar ─────────
+   In a folder: an up arrow and the path with chevrons. On a widget screen: a round back arrow,
+   the title next to it, the lock on the right. */
+.floating-breadcrumbs{flex-wrap:nowrap;gap:0;padding:4px 14px 4px 4px;overflow-x:auto;scrollbar-width:none;}
+.floating-breadcrumbs::-webkit-scrollbar{display:none;}
+.crumb-back,.detail-header #back{display:grid;place-items:center;flex-shrink:0;width:40px;height:40px;min-height:40px;padding:0;border-radius:50%;background:none;box-shadow:none;color:var(--on-surface);}
+.crumb-back:hover,.detail-header #back:hover{background:var(--state-hover);box-shadow:none;}
+.crumb-back:active,.detail-header #back:active{background:var(--state-press);}
+.crumb-back svg,.detail-header #back svg{width:20px;height:20px;}
+.floating-breadcrumbs .crumb{flex-shrink:0;max-width:240px;min-height:32px;padding:5px 10px;border-radius:999px;font-size:14px;font-weight:500;color:var(--on-surface-variant);}
+.floating-breadcrumbs .crumb:hover{background:var(--state-hover);text-decoration:none;}
+.floating-breadcrumbs .crumb[aria-current]{color:var(--on-surface);}
+.crumb-sep{display:grid;place-items:center;flex-shrink:0;color:var(--outline);}
+.crumb-sep svg{width:16px;height:16px;}
+.detail-header{grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:8px 4px;margin-left:-8px;}
+.detail-header #back{grid-column:1;grid-row:1;}
+.detail-header h1{grid-column:2;grid-row:1;font-size:clamp(20px,3vw,24px);line-height:1.3;font-weight:400;}
+.detail-header #detail-lock{grid-column:3;grid-row:1;display:grid;place-items:center;width:40px;height:40px;padding:0;border-radius:50%;color:var(--on-surface-variant);}
+.detail-header #detail-lock:hover{background:var(--state-hover);text-decoration:none;}
+@media(pointer:coarse){.crumb-back,.detail-header #back,.detail-header #detail-lock{width:44px;height:44px;min-height:44px;}.floating-breadcrumbs .crumb{min-height:40px;}}
+@media(max-width:600px){
+  .floating-breadcrumbs{padding:calc(env(safe-area-inset-top) + 4px) 12px 4px 4px;background:#eaf0f9d9;-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);}
+  .floating-breadcrumbs .crumb{max-width:60vw;font-size:15px;}
+  .detail-header{margin:0 -14px 12px;padding:4px 10px 6px 6px;}
+  .detail-header h1{font-size:20px;}
+}
