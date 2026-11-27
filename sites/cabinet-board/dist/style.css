@@ -1380,6 +1380,91 @@ html[data-bg=pink]{--bg:#f6e0e9;}html[data-bg=purple]{--bg:#e8e1f7;}html[data-bg
 html[data-bg]:not([data-bg=wallpaper]) body{background-color:var(--bg);background-image:linear-gradient(180deg,var(--bg-sheen),#fff0 55%);}
 @media(pointer:coarse){.swatch,.widget-menu .swatch{width:36px;height:36px;}#bg-swatches .swatch{width:40px;height:40px;}.widget-menu .swatch-row{flex-wrap:wrap;justify-content:flex-start;gap:8px;padding:10px 12px 12px;}}
 
+/* ───────── Clock and weather widgets ───────── */
+.clock-card{display:flex;flex-direction:column;gap:2px;height:100%;min-height:0;}
+.clock-time{font:400 54px/1.05 var(--font);letter-spacing:-1.5px;font-variant-numeric:tabular-nums;color:var(--on-surface);}
+.clock-time.has-seconds{font-size:44px;letter-spacing:-1px;}
+.clock-date{font-size:14px;line-height:1.35;}
+.clock-zones{list-style:none;margin:10px 0 0;padding:8px 0 0;border-top:1px solid var(--outline-variant);display:grid;gap:2px;}
+.clock-zones[hidden]{display:none;}
+.clock-zone{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:10px;min-height:30px;font-size:14px;}
+.clock-zone-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.clock-zone-diff{font-size:12px;white-space:nowrap;}
+.clock-zone-time{font-weight:500;font-variant-numeric:tabular-nums;}
+.clock-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:24px;max-width:520px;}
+.clock-face .clock-time{font-size:clamp(64px,16vw,104px);letter-spacing:-3px;}
+.clock-face .clock-time.has-seconds{font-size:clamp(48px,12vw,84px);}
+.clock-face .clock-date{font-size:17px;margin-top:6px;}
+.clock-section h2,.weather-body h2{margin:0 0 6px;font:500 14px/1.3 var(--font);color:var(--primary);}
+.clock-section .clock-zones{margin-top:0;padding-top:0;border-top:0;}
+.clock-layout .clock-zone{grid-template-columns:minmax(0,1fr) auto auto 40px;min-height:44px;font-size:16px;}
+.clock-layout .clock-zone-diff{font-size:13px;}
+.clock-add{display:flex;gap:8px;margin-top:10px;}
+.clock-add input{flex:1;min-width:0;}
+.clock-add .button{display:inline-flex;align-items:center;gap:6px;flex:none;}
+.clock-add .button svg{width:18px;height:18px;}
+.clock-hint{margin:4px 0 0;font-size:13px;}
+.clock-option{display:flex;align-items:center;gap:12px;min-height:44px;font-size:15px;cursor:pointer;}
+.clock-layout .form-error[hidden]{display:none;}
+
+.weather-card{display:flex;flex-direction:column;gap:4px;height:100%;min-height:0;overflow:hidden;}
+.weather-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;flex:1;width:100%;min-height:96px;border:1px dashed var(--outline-variant);border-radius:16px;background:none;color:var(--primary);font:500 14px/1.3 var(--font);}
+.weather-empty:hover{background:var(--state-primary);}
+.weather-empty svg{width:24px;height:24px;}
+.weather-now{display:grid;grid-template-columns:auto auto minmax(0,1fr);align-items:center;gap:10px;}
+.weather-icon{display:grid;place-items:center;width:48px;height:48px;border-radius:50%;background:var(--badge,var(--primary-container));color:var(--on-badge,var(--on-primary-container));}
+.weather-icon svg{width:28px;height:28px;}
+.weather-temp{font:400 44px/1 var(--font);letter-spacing:-1px;font-variant-numeric:tabular-nums;color:var(--on-surface);}
+.weather-summary{display:grid;gap:2px;min-width:0;text-align:right;}
+.weather-place{font:500 15px/1.25 var(--font);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.weather-text{font-size:13px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.weather-note{margin:2px 0 0;font-size:13px;min-height:1.3em;}
+.weather-days{list-style:none;margin:auto 0 0;padding:8px 0 0;border-top:1px solid var(--outline-variant);display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;}
+.weather-day{display:grid;justify-items:center;gap:2px;font-size:13px;}
+.weather-day-name{font-size:12px;color:var(--on-surface-variant);}
+.weather-day-icon{display:grid;place-items:center;color:var(--on-surface-variant);}
+.weather-day-icon svg{width:22px;height:22px;}
+.weather-day-max{font-weight:500;font-variant-numeric:tabular-nums;}
+.weather-day-min{font-size:12px;font-variant-numeric:tabular-nums;}
+.weather-card .weather-day-rain{display:none;}
+.weather-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;max-width:560px;}
+.weather-search{display:flex;align-items:center;gap:10px;padding:0 16px;min-height:48px;border-radius:999px;background:var(--surface-2);color:var(--on-surface-variant);}
+.weather-search:focus-within{outline:2px solid var(--primary);outline-offset:0;}
+.weather-search svg{width:20px;height:20px;flex:none;}
+.weather-search input,.weather-search input:focus-visible{flex:1;min-width:0;border:0;outline:0;background:none;box-shadow:none;padding:0;font-size:16px;color:var(--on-surface);}
+.weather-search-status{margin:0;font-size:13px;}
+.weather-search-status:empty{display:none;}
+.weather-results{list-style:none;margin:0;padding:0;display:grid;gap:2px;}
+.weather-results:empty{display:none;}
+.weather-result{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:6px 14px;border-radius:16px;text-align:left;color:var(--on-surface);}
+.weather-result:hover{background:var(--state-hover);}
+.weather-result svg{width:20px;height:20px;flex:none;color:var(--on-surface-variant);}
+.weather-result span{display:grid;min-width:0;}
+.weather-result small{font-size:13px;}
+.weather-body{display:grid;gap:10px;margin-top:8px;}
+.weather-body .weather-now{grid-template-columns:auto auto minmax(0,1fr);gap:16px;}
+.weather-body .weather-icon{width:64px;height:64px;}
+.weather-body .weather-icon svg{width:36px;height:36px;}
+.weather-body .weather-temp{font-size:64px;letter-spacing:-2px;}
+.weather-body .weather-place{font-size:20px;font-weight:400;white-space:normal;}
+.weather-body .weather-text{font-size:15px;white-space:normal;}
+.weather-region{margin:0;font-size:13px;}
+.weather-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:4px 0 8px;}
+.weather-facts div{padding:10px 14px;border-radius:16px;background:var(--tile,var(--surface-2));}
+.weather-facts dt{font-size:12px;}
+.weather-facts dd{margin:2px 0 0;font:500 16px/1.3 var(--font);}
+.weather-days-list{grid-template-columns:1fr;gap:0;margin:0;padding:0;border-top:0;}
+.weather-days-list .weather-day{grid-template-columns:minmax(0,1fr) 28px 44px 44px 44px;justify-items:end;align-items:center;gap:8px;min-height:44px;font-size:15px;border-bottom:1px solid var(--outline-variant);}
+.weather-days-list .weather-day:last-child{border-bottom:0;}
+.weather-days-list .weather-day-name{justify-self:start;font-size:15px;color:var(--on-surface);}
+.weather-days-list .weather-day-min{font-size:15px;}
+.weather-days-list .weather-day-rain{font-size:13px;color:var(--primary);}
+.weather-body .weather-note:empty{display:none;}
+.weather-body>.text-button{justify-self:start;}
+.weather-credit{margin:8px 0 0;font-size:12px;}
+.weather-credit a{color:var(--primary);}
+.list-view .weather-card,.list-view .clock-card{height:auto;}
+
 /* ───────── Dark theme ─────────
    theme.js puts data-theme=light|dark on <html> (the owner's choice, or the system's when set to "auto").
    Only tokens change here; the rules above read them. */

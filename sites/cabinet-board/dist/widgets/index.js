@@ -6,5 +6,7 @@ import {folder} from './folder.js';
 import {focus} from './focus.js';
 import {savings} from './savings.js';
 import {daily} from './daily.js';
+import {clock} from './clock.js';
+import {weather} from './weather.js';
 export const registry=new WidgetRegistry();
-for(const definition of [note,tasks,daily,folder,links,focus,savings])registry.register(definition);
+for(const definition of [note,tasks,daily,folder,links,focus,clock,weather,savings])registry.register(definition);
