@@ -34,6 +34,8 @@ const unlocked=new Set(),externalProtected=new Set();
 const pinDialog=createPinDialog(storage,$('#pin-dialog'),lockCards);
 const lockedTitle='Закрытая карточка';
 const dragExclusions='input,textarea,select,label,[contenteditable],[data-no-card-drag],.widget-options,.card-edit-done,.unlock-card';
+// On the canvas the whole face of a card closed with a PIN is its handle: drag moves it, a click asks for the PIN.
+const canGrab=target=>!target.closest(dragExclusions)||!list&&!!target.closest('.widget.locked-card');
 function isProtected(node){return node.pinProtected||externalProtected.has(node.id);}
 function lockFor(id){return store.ancestors(id).find(node=>isProtected(node)&&!unlocked.has(node.id));}
 function requirePin(title,complete,save=false){
@@ -72,7 +74,8 @@ const hold=createHoldGesture({
     suppressClickUntil=performance.now()+800;
     const frame=all('.widget').find(frame=>frame.dataset.id===id);
     if(list){const button=frame?.querySelector('.widget-options');if(button)cardMenu(button,id);return;}
-    beginEditing(id,{showInspector:false,announce:false});
+    // A card closed with a PIN can be carried to a new place, but not opened, resized or edited.
+    if(!lockFor(id))beginEditing(id,{showInspector:false,announce:false});
     if(frame)startCardDrag(frame,pointer);
   },
   feedback:(id,active)=>all('.widget').find(frame=>frame.dataset.id===id)?.classList.toggle('holding',active),
@@ -402,7 +405,7 @@ board.addEventListener('pointerdown',event=>{
   const frame=event.target.closest('.widget');
   if(!frame){if(editingId)finishEditing();return;}
   if(editingId&&editingId!==frame.dataset.id)finishEditing();
-  if(event.button!==0||event.pointerType==='mouse'||hand||space||editingId===frame.dataset.id||lockFor(frame.dataset.id)||event.target.closest(dragExclusions+',.transform-handle'))return;
+  if(event.button!==0||event.pointerType==='mouse'||hand||space||editingId===frame.dataset.id||(list&&lockFor(frame.dataset.id))||!canGrab(event.target)||event.target.closest('.transform-handle'))return;
   hold.start(event.pointerId,event.clientX,event.clientY,frame.dataset.id);
 },true);
 document.addEventListener('pointerdown',event=>{if(!event.isPrimary){pendingMouseDrag=null;hold.cancel();if(drag)endDrag({pointerId:drag.pointer},drag.kind!=='pan');}},true);
@@ -419,18 +422,18 @@ board.addEventListener('contextmenu',event=>{if(event.target.closest('.widget')&
 board.addEventListener('dragstart',event=>{if(event.target.closest('.widget'))event.preventDefault();});
 board.addEventListener('scroll',()=>hold.cancel(),true);
 function startCardDrag(frame,event,handle=null){
-  const node=store.get(frame.dataset.id);if(!node||drag||lockFor(node.id))return;
-  const p=point(event);selected=node.id;
-  drag={pointer:event.pointerId,startX:event.clientX,startY:event.clientY,p,kind:handle?(handle.dataset.rotate!==undefined?'rotate':'resize'):'move',id:node.id,frame,original:{...node.layout},preview:{...node.layout}};
+  const node=store.get(frame.dataset.id),locked=!!lockFor(frame.dataset.id);if(!node||drag||locked&&handle)return;
+  const p=point(event);if(!locked)selected=node.id;
+  drag={pointer:event.pointerId,startX:event.clientX,startY:event.clientY,p,kind:handle?(handle.dataset.rotate!==undefined?'rotate':'resize'):'move',id:node.id,frame,locked,original:{...node.layout},preview:{...node.layout}};
   if(drag.kind==='resize'){drag.sx=handle.dataset.corner.includes('e')?1:-1;drag.sy=handle.dataset.corner.includes('s')?1:-1;}
   if(drag.kind==='rotate')drag.startAngle=Math.atan2(p.y-node.layout.y,p.x-node.layout.x)*180/Math.PI;
   try{board.setPointerCapture(event.pointerId);}catch{drag=null;return;}
   frame.classList.add('dragging-card');board.classList.add('dragging');document.body.classList.toggle('carrying-card',drag.kind==='move'&&!!currentParent);
-  (handle||frame.querySelector('[data-drag]')).focus({preventScroll:true});highlight();$('#inspector').hidden=true;
+  (handle||frame.querySelector('[data-drag]'))?.focus({preventScroll:true});highlight();$('#inspector').hidden=true;
   return true;
 }
 board.addEventListener('pointerdown',event=>{
-  if(list||drag||!event.isPrimary||event.button>1||event.target.closest(dragExclusions+',.board-empty'))return;
+  if(list||drag||!event.isPrimary||event.button>1||!canGrab(event.target)||event.target.closest('.board-empty'))return;
   const frame=event.target.closest('.widget'),handle=event.target.closest('.transform-handle');
   if(!frame||hand||space||event.button===1){
     board.setPointerCapture(event.pointerId);
@@ -466,7 +469,7 @@ document.addEventListener('pointermove',event=>{
   if(drag.kind==='resize')drag.preview=resizeRotated(l,p,drag.sx,drag.sy,registry.get(node.type)?.minSize,event.shiftKey);
   if(drag.kind==='rotate'){let a=l.rotation+Math.atan2(p.y-l.y,p.x-l.x)*180/Math.PI-drag.startAngle;if(event.shiftKey)a=Math.round(a/15)*15;drag.preview={...l,rotation:normalizeAngle(a)};}
   paintLayout(drag.frame,drag.preview);all('.drop-target').forEach(n=>n.classList.remove('drop-target'));drag.target=null;drag.crumb=undefined;
-  if(drag.kind==='move'&&Math.hypot(event.clientX-drag.startX,event.clientY-drag.startY)>8){const target=store.children(currentParent).filter(n=>n.type==='folder'&&!lockFor(n.id)&&store.canMove(drag.id,n.id)&&containsPoint(n.layout,p)).at(-1);if(target){drag.target=target.id;all('.widget').find(frame=>frame.dataset.id===target.id)?.classList.add('drop-target');}
+  if(drag.kind==='move'&&!drag.locked&&Math.hypot(event.clientX-drag.startX,event.clientY-drag.startY)>8){const target=store.children(currentParent).filter(n=>n.type==='folder'&&!lockFor(n.id)&&store.canMove(drag.id,n.id)&&containsPoint(n.layout,p)).at(-1);if(target){drag.target=target.id;all('.widget').find(frame=>frame.dataset.id===target.id)?.classList.add('drop-target');}
     // Inside a folder the path at the top takes cards too: drop one on «Моя доска» to carry it out.
     const crumb=currentParent?all('#breadcrumbs .crumb[data-dest]').find(button=>{const r=button.getBoundingClientRect();return event.clientX>=r.left-8&&event.clientX<=r.right+8&&event.clientY>=r.top-8&&event.clientY<=r.bottom+8;}):null;
     if(crumb&&store.canMove(drag.id,crumb.dataset.dest||null)){drag.target=null;drag.crumb=crumb.dataset.dest||null;crumb.classList.add('drop-target');}}

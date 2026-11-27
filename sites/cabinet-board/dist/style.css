@@ -1348,3 +1348,8 @@ body.carrying-tile{cursor:grabbing;user-select:none;-webkit-user-select:none;}
   .detail-header{margin:0 -14px 12px;padding:4px 10px 6px 6px;}
   .detail-header h1{font-size:20px;}
 }
+
+/* A card closed with a PIN can still be carried around the board. */
+.board:not(.list-view) .widget.locked-card .unlock-card{touch-action:none;}
+@media(any-pointer:fine){.board:not(.list-view) .widget.locked-card .unlock-card{cursor:grab;}}
+.dragging .widget.locked-card .unlock-card{cursor:grabbing;}

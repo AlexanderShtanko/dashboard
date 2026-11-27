@@ -2,7 +2,7 @@
 // Same-origin files: the network comes first, so a new version shows up on the very next launch;
 // the cache is only the fallback when there is no connection (or the network is too slow).
 // Google and currency requests are never cached.
-const CACHE = 'cabinet-v10';
+const CACHE = 'cabinet-v11';
 const SHELL = ['./', './index.html', './style.css', './app.js', './manifest.webmanifest', './icons/icon-192.png'];
 const TIMEOUT = 4000;
 
