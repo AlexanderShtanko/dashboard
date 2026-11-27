@@ -1465,6 +1465,19 @@ html[data-bg]:not([data-bg=wallpaper]) body{background-color:var(--bg);backgroun
 .weather-credit a{color:var(--primary);}
 .list-view .weather-card,.list-view .clock-card{height:auto;}
 
+/* ───────── A card closed with a PIN: its own look, blurred, with a lock on top ───────── */
+.widget.locked-card,.widget.locked-card[data-type]{background:var(--card,var(--surface-0));color:var(--on-surface);overflow:hidden;}
+.locked-blur{display:flex;flex-direction:column;flex:1;min-height:0;filter:blur(11px);opacity:.9;pointer-events:none;-webkit-user-select:none;user-select:none;}
+.locked-blur .widget-content{flex:1;min-height:0;overflow:hidden;}
+.widget.locked-card .unlock-card{position:absolute;inset:0;z-index:1;flex:none;width:auto;padding:0;border-radius:inherit;background:color-mix(in srgb,var(--card,var(--surface-0)) 15%,transparent);}
+.lock-badge{display:grid;place-items:center;width:52px;height:52px;border-radius:50%;background:var(--surface-0);color:var(--on-surface);box-shadow:var(--elev-2);transition:scale .2s var(--ease),box-shadow .2s var(--ease);}
+.unlock-card .lock-badge svg{width:24px;height:24px;}
+@media(any-pointer:fine){.unlock-card:hover .lock-badge{scale:1.06;box-shadow:var(--elev-3);}}
+.unlock-card:focus-visible{outline:2px solid var(--primary);outline-offset:-3px;}
+.list-view .locked-card .unlock-card{min-height:0;}
+.list-view .locked-card .locked-blur{max-height:260px;}
+@media(prefers-reduced-motion:reduce){.lock-badge{transition:none;}}
+
 /* ───────── Dark theme ─────────
    theme.js puts data-theme=light|dark on <html> (the owner's choice, or the system's when set to "auto").
    Only tokens change here; the rules above read them. */

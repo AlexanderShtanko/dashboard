@@ -254,8 +254,13 @@ function renderBoard(){
   board.classList.toggle('list-view',list);$('#canvas-controls').hidden=list;$('#dock-fit').hidden=list||!children.length;$('#board-help').textContent=boardHelp();$('#view-canvas').setAttribute('aria-pressed',String(!list));$('#view-list').setAttribute('aria-pressed',String(list));$('#undo').disabled=!store.history.length;$('#count').textContent=cardCount(children.length);$('#board-empty').hidden=!!children.length;
   for(const [index,node] of children.entries()){
     if(lockFor(node.id)){
-      const frame=el('article',{class:'widget locked-card','data-id':node.id,'aria-label':lockedTitle},
-        el('button',{class:'unlock-card',type:'button',onClick:()=>unlockCard(node.id)},icon('lock'),el('strong',{},lockedTitle),el('span',{},'Открыть по PIN')));
+      // The card keeps its look, but blurred past reading and switched off (inert): no focus, no clicks,
+      // no screen reader, no page search. A lock on top opens it with the PIN.
+      const locked=registry.get(node.type),veil=el('div',{class:'locked-blur','aria-hidden':'true',inert:true},
+        el('header',{class:'widget-header'},el('span',{class:'widget-drag'},symbol(locked?.icon),el('span',{},node.title))));
+      const hidden=el('div',{class:'widget-content'});try{if(locked)mount(locked.renderCard(ctx(node)),hidden);}catch{}veil.append(hidden);
+      const frame=el('article',{class:'widget locked-card','data-id':node.id,'data-type':node.type,'data-color':cardColor(node.color),'aria-label':lockedTitle},veil,
+        el('button',{class:'unlock-card',type:'button','aria-label':lockedTitle+'. Открыть по PIN',title:'Открыть по PIN',onClick:()=>unlockCard(node.id)},el('span',{class:'lock-badge'},icon('lock'))));
       paintLayout(frame,node.layout);frame.style.zIndex=index;world.append(frame);
       continue;
     }
