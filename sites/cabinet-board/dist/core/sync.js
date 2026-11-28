@@ -25,6 +25,7 @@ export const CHUNK_SIZE = 7600;
 export const MAX_CHUNKS = 6;
 export const MIN_GAP = 10_000;
 const INCOMPLETE_GRACE = 2 * 60_000;
+const AUTH_RETRY = 30_000; // Silent Google re-sign-in retry while it fails for a passing reason.
 const chunkKey = (rev, index) => `chunk:${rev}:${index}`;
 const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const kb = bytes => Math.ceil(bytes / 1024);
@@ -201,6 +202,7 @@ export function createSync({local, remote, sync, registry, stateKey = SYNC_STATE
     try { found = await remote.read(); }
     catch (error) {
       if (error.code === 'auth') { await setStatus('signed-out', error.message); return {}; }
+      if (error.code === 'auth-wait') { await setStatus('pending', error.message); return {retry: AUTH_RETRY}; }
       if (error.code !== 'incomplete') throw error;
       const since = state.incompleteSince ?? now();
       if (now() - since < INCOMPLETE_GRACE) {
@@ -277,6 +279,7 @@ export function createSync({local, remote, sync, registry, stateKey = SYNC_STATE
         if (error.code !== 'too-big') {
           next.rev = state.rev; next.base = state.base; next.pin = state.pin;
           await local.set({...localWrites, [stateKey]: next});
+          if (error.code === 'auth-wait') { await setStatus('pending', error.message); return {retry: AUTH_RETRY}; }
           await setStatus(error.code === 'auth' ? 'signed-out' : 'error',
             error.code === 'auth' ? error.message : 'Не удалось синхронизировать: ' + (error?.message || error) + ' Повторю позже.');
           return error.code === 'auth' ? {} : {retry: 60_000};
