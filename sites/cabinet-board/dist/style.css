@@ -1104,10 +1104,13 @@ input:focus,textarea:focus,select:focus{background:var(--surface-0);border-color
 /* Links: Chrome new tab page shortcuts. */
 .link-tile-link{border-radius:16px;}
 .link-tile-link:hover,.link-tile:focus-within .link-tile-link{background:var(--state-hover);}
-.link-circle{background:var(--surface-2);box-shadow:none;}
+.link-circle{background:var(--tile,var(--surface-2));box-shadow:none;}
 .link-letter{background:var(--avatar,#5f6368);color:#fff;text-shadow:none;font-weight:500;}
-.link-add .link-circle{background:var(--surface-2);color:var(--on-surface-variant);box-shadow:none;}
-.link-more{background:var(--surface-0);color:var(--on-surface-variant);box-shadow:var(--elev-1);}
+.link-add .link-circle{background:var(--tile,var(--surface-2));color:var(--on-surface-variant);box-shadow:none;}
+/* The ⋯ badge follows the card colour (--tile) and darkens/lightens on hover and press, never turns white in the dark theme. */
+.link-more{background:var(--tile,var(--surface-0));color:var(--on-surface-variant);box-shadow:var(--elev-1);}
+.link-more:hover,.link-more[aria-expanded=true]{background:color-mix(in srgb,var(--tile,var(--surface-0)),var(--on-surface) 10%);color:var(--on-surface);}
+.link-more:active:not(:disabled){background:color-mix(in srgb,var(--tile,var(--surface-0)),var(--on-surface) 16%);color:var(--on-surface);}
 .link-tile.dragging .link-circle{box-shadow:0 0 0 2px var(--primary),var(--elev-2);}
 
 /* Folder: like a launcher folder, child tiles are light rounded squares. */
@@ -1525,3 +1528,8 @@ html[data-theme=dark] [data-color=blue]{--card:#1d2b44;--badge:#1f4480;--on-badg
 html[data-theme=dark] [data-color=green]{--card:#1d3225;--badge:#215236;--on-badge:#c4eed0;--tile:#273f30;}
 html[data-theme=dark] [data-color=grey]{--card:#2b2d31;--badge:#3e4146;--on-badge:#e3e3e3;--tile:#35383d;}
 html[data-theme=dark] .toast-action:hover{background:#0000001f;}
+
+/* Widget screen: the top bar sits flush with the top edge, no gap above it (0.12.4). */
+body.detail-mode .main{padding-top:env(safe-area-inset-top,0px);}
+.detail-header{padding-top:8px;padding-bottom:8px;margin-bottom:12px;}
+@media(max-width:600px){.detail-header{padding-top:4px;padding-bottom:6px;}}
