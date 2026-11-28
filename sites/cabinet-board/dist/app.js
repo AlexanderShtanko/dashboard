@@ -2,7 +2,7 @@ import {registry} from './widgets/index.js';
 import {BoardStore,KEY} from './core/store.js';
 import {BOARD_BACKGROUNDS,BACKGROUND_THEME,BACKGROUND_THEME_DARK,cardColor,boardBackground} from './core/colors.js';
 import {el,action,symbol} from './core/dom.js';
-import {resizeRotated,clamp,normalizeAngle,boundsOf,containsPoint} from './core/geometry.js';
+import {resizeRotated,clamp,normalizeAngle,boundsOf,containsPoint,fitCamera,parseZoom,ZOOM_MIN,ZOOM_MAX} from './core/geometry.js';
 import {seed} from './seed.js';
 import {createWidgetMenu} from './core/widget-menu.js';
 import {createHoldGesture} from './core/hold-gesture.js';
@@ -243,7 +243,7 @@ function backTarget(){
   const from=store.get(cameFrom.id);return from&&from.type==='folder'&&!lockFor(from.id)?from.id:parent;
 }
 function inspect(){const node=lockFor(selected)?null:store.get(selected);$('#inspector').hidden=!inspectorVisible||!node||board.hidden;$('#item-title').value=node?.title??'';if(!node)return;$('#item-width').value=Math.round(node.layout.w);$('#item-height').value=Math.round(node.layout.h);$('#item-angle').value=Math.round(node.layout.rotation);const min=registry.get(node.type)?.minSize||{w:220,h:170};$('#item-width').min=min.w;$('#item-height').min=min.h;}
-function paintCamera(){world.style.transform=list?'':`translate(${camera.x}px,${camera.y}px) scale(${camera.z})`;world.style.setProperty('--inverse',1/camera.z);board.style.backgroundSize=`${24*camera.z}px ${24*camera.z}px`;board.style.backgroundPosition=`${camera.x}px ${camera.y}px`;$('#zoom-value').textContent=Math.round(camera.z*100)+'%';board.classList.toggle('hand',hand||space);}
+function paintCamera(){world.style.transform=list?'':`translate(${camera.x}px,${camera.y}px) scale(${camera.z})`;world.style.setProperty('--inverse',1/camera.z);board.style.backgroundSize=`${24*camera.z}px ${24*camera.z}px`;board.style.backgroundPosition=`${camera.x}px ${camera.y}px`;if(document.activeElement!==$('#zoom-value'))$('#zoom-value').value=Math.round(camera.z*100)+'%';board.classList.toggle('hand',hand||space);}
 function paintLayout(frame,layout){frame.style.left=layout.x-layout.w/2+'px';frame.style.top=layout.y-layout.h/2+'px';frame.style.width=layout.w+'px';frame.style.height=layout.h+'px';frame.style.transform=`rotate(${layout.rotation}deg)`;}
 function cardMenu(button,id){
   const node=store.get(id);if(!node||lockFor(id))return;
@@ -349,17 +349,16 @@ function boardHelp(){
 }
 function fit(){
   if(list||board.hidden)return;
-  const b=boundsOf(store.children(currentParent)),w=board.clientWidth,h=board.clientHeight;
-  // The dock (shelf) sits at the bottom centre: keep cards clear of it.
+  const w=board.clientWidth,h=board.clientHeight,phone=w<700;
+  // The dock (shelf) sits at the bottom centre on the board, breadcrumbs at the top: keep cards clear of them.
   const area=board.getBoundingClientRect(),dock=$('.workspace-dock').getBoundingClientRect(),low=dock.top>area.top+h/2;
   const crumbs=$('#breadcrumbs').hidden?0:$('#breadcrumbs').getBoundingClientRect().bottom-area.top;
-  const top=Math.min(Math.max(low?0:dock.bottom-area.top,crumbs)+12,h/3),bottom=low?Math.min(area.bottom-dock.top+12,h/3):24;
-  camera.z=clamp(Math.min((w-(w<700?24:90))/(b.right-b.left),(h-top-bottom)/(b.bottom-b.top),1),.2,2);
-  camera.x=w/2-(b.left+b.right)/2*camera.z;
-  camera.y=(top+h-bottom)/2-(b.top+b.bottom)/2*camera.z;
+  const top=Math.min(Math.max(low?0:dock.bottom-area.top,crumbs,0),h/3),bottom=low?Math.min(Math.max(area.bottom-dock.top,0),h/3):0;
+  camera=fitCamera(boundsOf(store.children(currentParent)),{w,h,top,bottom,pad:phone?12:24});
   paintCamera();rememberCamera();
 }
-function zoom(factor,x=board.clientWidth/2,y=board.clientHeight/2){const z=clamp(camera.z*factor,.2,2),wx=(x-camera.x)/camera.z,wy=(y-camera.y)/camera.z;camera={z,x:x-wx*z,y:y-wy*z};paintCamera();rememberCamera();}
+function zoom(factor,x,y){zoomTo(camera.z*factor,x,y);}
+function zoomTo(target,x=board.clientWidth/2,y=board.clientHeight/2){const z=clamp(target,ZOOM_MIN,ZOOM_MAX),wx=(x-camera.x)/camera.z,wy=(y-camera.y)/camera.z;camera={z,x:x-wx*z,y:y-wy*z};paintCamera();rememberCamera();}
 function point(event){const r=board.getBoundingClientRect();return {x:(event.clientX-r.left-camera.x)/camera.z,y:(event.clientY-r.top-camera.y)/camera.z};}
 function addType(type){$('#board-options').close();const onScreen=route.kind==='widget',parent=onScreen?(store.get(route.id)?.parentId??null):currentParent;const pos=list||onScreen?undefined:{x:(board.clientWidth/2-camera.x)/camera.z,y:(board.clientHeight/2-camera.y)/camera.z};const id=attempt(()=>store.add(type,parent,pos));if(!id)return;selected=id;$('#catalog').close();if(onScreen)go(parent);else renderBoard();if(list)requestAnimationFrame(()=>all('.widget').find(frame=>frame.dataset.id===id)?.scrollIntoView({block:'center',behavior:'smooth'}));status('Карточка добавлена.');}
 $('#catalog-grid').replaceChildren(...registry.list().map(def=>
@@ -379,7 +378,12 @@ new ResizeObserver(()=>{if(board.hidden||list){lastBoardSize=null;return;}const 
 all('[data-close]').forEach(button=>button.onclick=()=>button.closest('dialog').close());
 all('dialog').forEach(dialog=>dialog.addEventListener('click',event=>{if(event.target===dialog){const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dialog.close();}}));
 $('#view-canvas').onclick=()=>{list=false;$('#board-options').close();restoreCamera();};$('#view-list').onclick=()=>{list=true;$('#board-options').close();renderBoard();};
-$('#zoom-in').onclick=()=>zoom(1.2);$('#zoom-out').onclick=()=>zoom(1/1.2);$('#fit').onclick=()=>{fit();$('#board-options').close();};$('#dock-fit').onclick=fit;$('#pan-mode').hidden=coarsePointer();$('#pan-mode').onclick=()=>{hand=!hand;$('#pan-mode').setAttribute('aria-pressed',String(hand));$('#board-options').close();paintCamera();};
+$('#zoom-in').onclick=()=>zoom(1.2);
+// The zoom value can be typed: 150, 150% or 1.5x. Enter applies it, Esc puts the current value back.
+{const field=$('#zoom-value'),show=()=>{field.value=Math.round(camera.z*100)+'%';},apply=()=>{const z=parseZoom(field.value);if(z===null){show();status('Масштаб — число от '+ZOOM_MIN*100+' до '+ZOOM_MAX*100+' %.');return;}zoomTo(z);show();};
+field.onfocus=()=>{field.value=String(Math.round(camera.z*100));field.select();};
+field.onchange=apply;field.onblur=show;
+field.onkeydown=event=>{if(event.key==='Enter'){event.preventDefault();apply();field.select();}else if(event.key==='Escape'){event.preventDefault();event.stopPropagation();show();field.blur();}else if(event.key==='ArrowUp'||event.key==='ArrowDown'){event.preventDefault();zoomTo((Math.round(camera.z*100)+(event.key==='ArrowUp'?10:-10))/100);field.value=String(Math.round(camera.z*100));field.select();}};}$('#zoom-out').onclick=()=>zoom(1/1.2);$('#fit').onclick=()=>{fit();$('#board-options').close();};$('#dock-fit').onclick=fit;$('#pan-mode').hidden=coarsePointer();$('#pan-mode').onclick=()=>{hand=!hand;$('#pan-mode').setAttribute('aria-pressed',String(hand));$('#board-options').close();paintCamera();};
 $('#undo').onclick=()=>{attempt(()=>store.undo());if(selected&&!store.get(selected)){selected=null;inspect();}$('#board-options').close();status('Последнее изменение отменено.');};
 $('#close-inspector').onclick=finishEditing;
 $('#item-title').onchange=e=>attempt(()=>store.update(selected,{title:e.target.value}));
@@ -476,7 +480,7 @@ document.addEventListener('pointermove',event=>{
   if(touch){touch.x=event.clientX;touch.y=event.clientY;}
   if(pinch){
     if(event.pointerId!==pinch.a&&event.pointerId!==pinch.b)return;
-    const now=pinchFrame(),from=pinch.start,c=pinch.camera,z=clamp(c.z*now.d/from.d,.2,2);
+    const now=pinchFrame(),from=pinch.start,c=pinch.camera,z=clamp(c.z*now.d/from.d,ZOOM_MIN,ZOOM_MAX);
     camera={z,x:now.x-(from.x-c.x)/c.z*z,y:now.y-(from.y-c.y)/c.z*z};paintCamera();return;
   }
   hold.move(event.pointerId,event.clientX,event.clientY);
